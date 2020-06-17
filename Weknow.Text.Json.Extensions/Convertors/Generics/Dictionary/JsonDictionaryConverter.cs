@@ -14,6 +14,19 @@ namespace Weknow.Text.Json.Extensions
     /// <seealso cref="System.Text.Json.Serialization.JsonConverterFactory" />
     public class JsonDictionaryConverter : JsonConverterFactory
     {
+        public static readonly JsonDictionaryConverter Default = new JsonDictionaryConverter();
+
+        #region Ctor
+
+        /// <summary>
+        /// Prevents a default instance of the <see cref="JsonDictionaryConverter"/> class from being created.
+        /// </summary>
+        private JsonDictionaryConverter()
+        {
+        }
+
+        #endregion // Ctor
+
         #region CanConvert
 
         /// <summary>

@@ -12,8 +12,6 @@ namespace Weknow.Text.Json.Extensions.Tests
     public static class Constants
     {
         private static readonly JsonStringEnumConverter EnumConvertor = new JsonStringEnumConverter(JsonNamingPolicy.CamelCase);
-        public static readonly JsonImmutableDictionaryConverter ImmutableDictionaryConverter = new JsonImmutableDictionaryConverter();
-        public static readonly JsonDictionaryConverter DictionaryConverter = new JsonDictionaryConverter();
 
         static Constants()
         {
@@ -24,7 +22,7 @@ namespace Weknow.Text.Json.Extensions.Tests
                 // PropertyNameCaseInsensitive = true,
                 // IgnoreNullValues = true,
                 WriteIndented = true,
-                Converters = { EnumConvertor, DictionaryConverter, ImmutableDictionaryConverter }
+                Converters = { EnumConvertor, JsonDictionaryConverter.Default, JsonImmutableDictionaryConverter.Default }
             };
             SerializerOptionsWithoutConverters = new JsonSerializerOptions
             {
