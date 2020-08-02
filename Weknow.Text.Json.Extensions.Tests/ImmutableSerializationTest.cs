@@ -14,6 +14,8 @@ namespace Weknow.Text.Json.Extensions.Tests
     {
         private readonly static Func<Dictionary<ConsoleColor, string>, Dictionary<ConsoleColor, string>, bool> COMPARE_DIC =
             (a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value);
+        private readonly static Func<ImmutableDictionary<string, object>, ImmutableDictionary<string, object>, bool> COMPARE_STR_OBJ_DIC =
+            (a, b) => a.Count == b.Count && a.All(p => b[p.Key].Equals(p.Value));
         private readonly static Func<ImmutableDictionary<ConsoleColor, string>, ImmutableDictionary<ConsoleColor, string>, bool> COMPARE_IMM_DIC =
             (a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value);
 
@@ -27,6 +29,20 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             source.AssertSerialization(COMPARE_IMM_DIC);
         }
+
+        #region Dictionary_String_Object_Test
+
+        [Fact]
+        public void Dictionary_String_Object_Test()
+        {
+            var source = ImmutableDictionary<string, object>.Empty
+                .Add("A", nameof(ConsoleColor.Blue))
+                .Add("B", new Foo(10, "Bamby", DateTime.Now));
+
+            source.AssertSerialization(COMPARE_STR_OBJ_DIC);
+        }
+
+        #endregion // Dictionary_String_Object_Test
 
         [Fact]
         public void Foo_Test()
