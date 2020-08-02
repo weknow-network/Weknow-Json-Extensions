@@ -9,7 +9,7 @@
     <Authors>Weknow</Authors>
     <Company>Weknow</Company>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <Configurations>Debug;Release</Configurations>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/weknow-network/Weknow-Json-Extensions</RepositoryUrl>

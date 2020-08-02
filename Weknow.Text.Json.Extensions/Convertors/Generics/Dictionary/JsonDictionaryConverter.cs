@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +16,7 @@ namespace System.Text.Json
     public class JsonDictionaryConverter : JsonConverterFactory
     {
         public static readonly JsonDictionaryConverter Default = new JsonDictionaryConverter();
+        private static readonly Type OBJ_TYPE = typeof(object);
 
         #region Ctor
 
@@ -44,6 +46,11 @@ namespace System.Text.Json
             }
 
             if (typeToConvert.GetGenericTypeDefinition() != typeof(Dictionary<,>))
+            {
+                return false;
+            }
+
+            if (typeToConvert.GenericTypeArguments.Any(arg => arg == OBJ_TYPE))
             {
                 return false;
             }
@@ -92,6 +99,9 @@ namespace System.Text.Json
                 JsonConverter<Dictionary<TKey, TValue>>
                 where TKey : notnull
         {
+            private readonly bool IS_OBJ_KEY = typeof(TKey) == typeof(object);
+            private readonly bool IS_OBJ_VALUE = typeof(TValue) == typeof(object);
+
             private readonly JsonConverter<TKey> _keyConverter;
             private readonly JsonConverter<TValue> _valueConverter;
             private Type _keyType;
@@ -136,6 +146,7 @@ namespace System.Text.Json
                 Type typeToConvert,
                 JsonSerializerOptions options)
             {
+
                 if (reader.TokenType != JsonTokenType.StartArray)
                 {
                     throw new JsonException();

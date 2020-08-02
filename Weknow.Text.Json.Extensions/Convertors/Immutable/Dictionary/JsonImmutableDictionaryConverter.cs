@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -16,6 +17,7 @@ namespace System.Text.Json
     public class JsonImmutableDictionaryConverter : JsonConverterFactory
     {
         public static readonly JsonImmutableDictionaryConverter Default = new JsonImmutableDictionaryConverter();
+        private static readonly Type OBJ_TYPE = typeof(object);
 
         #region Ctor
 
@@ -45,6 +47,11 @@ namespace System.Text.Json
             }
 
             if (typeToConvert.GetGenericTypeDefinition() != typeof(ImmutableDictionary<,>))
+            {
+                return false;
+            }
+
+            if (typeToConvert.GenericTypeArguments.Any(arg => arg == OBJ_TYPE))
             {
                 return false;
             }
