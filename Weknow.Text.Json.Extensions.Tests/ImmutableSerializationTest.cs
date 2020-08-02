@@ -17,39 +17,6 @@ namespace Weknow.Text.Json.Extensions.Tests
         private readonly static Func<ImmutableDictionary<ConsoleColor, string>, ImmutableDictionary<ConsoleColor, string>, bool> COMPARE_IMM_DIC =
             (a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value);
 
-        [Fact]
-        public void Dictionary_Test()
-        {
-            var source = new Dictionary<ConsoleColor, string> 
-            {
-                [ConsoleColor.Blue] = nameof(ConsoleColor.Blue),
-                [ConsoleColor.White] = nameof(ConsoleColor.White)
-            };
-
-            source.AssertSerialization(COMPARE_DIC);
-        }
-
-        [Fact]
-        public void Dictionary_WithoutConvertor_Test()
-        {
-            var source = new Dictionary<ConsoleColor, string> 
-            {
-                [ConsoleColor.Blue] = nameof(ConsoleColor.Blue),
-                [ConsoleColor.White] = nameof(ConsoleColor.White)
-            };
-
-            try
-            {
-                source.AssertSerialization(
-                    COMPARE_DIC,
-                    options: SerializerOptionsWithoutConverters);
-                throw new Exception("Unexpected");
-            }
-            catch (NotSupportedException)
-            {
-                // expected
-            }
-        }
 
         [Fact]
         public void ImmutableDictionary_Test()
@@ -116,7 +83,7 @@ namespace Weknow.Text.Json.Extensions.Tests
                 .Add(nameof(ConsoleColor.Blue), ConsoleColor.Blue)
                 .Add(nameof(ConsoleColor.White), ConsoleColor.White);
 
-            var nested = new Nested { Id = 2, Map = source};
+            var nested = new NestedImmutable { Id = 2, Map = source};
 
             nested.AssertSerialization();
         }

@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 // credit: https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to
 
-namespace Weknow.Text.Json.Extensions
+namespace System.Text.Json
 {
     /// <summary>
     /// Json immutable dictionary converter
@@ -69,7 +69,7 @@ namespace Weknow.Text.Json.Extensions
             Type keyType = type.GetGenericArguments()[0];
             Type valueType = type.GetGenericArguments()[1];
 
-            Type genType= typeof(ConvertStrategy<,>).MakeGenericType(
+            Type genType = typeof(ConvertStrategy<,>).MakeGenericType(
                     new Type[] { keyType, valueType });
             JsonConverter? converter = (JsonConverter?)Activator.CreateInstance(
                 genType,
@@ -88,7 +88,6 @@ namespace Weknow.Text.Json.Extensions
         /// </summary>
         /// <typeparam name="TKey">The type of the key.</typeparam>
         /// <typeparam name="TValue">The type of the value.</typeparam>
-        /// <seealso cref="System.Text.Json.Serialization.JsonConverter{System.Collections.Generic.Dictionary{TKey, TValue}}" />
         private class ConvertStrategy<TKey, TValue> :
                 JsonConverter<Dictionary<TKey, TValue>>
                 where TKey : notnull
@@ -142,21 +141,22 @@ namespace Weknow.Text.Json.Extensions
                     throw new JsonException();
                 }
 
-                Dictionary<TKey, TValue> dictionary = new Dictionary<TKey, TValue>();
+                var dictionary = new Dictionary<TKey, TValue>();
 
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
                 {
-                    // Get the key.
                     if (reader.TokenType != JsonTokenType.StartArray)
                     {
                         throw new JsonException();
                     }
 
                     // Get the key.
+                    reader.Read();
+
+                    // Get the key.
                     TKey k;
                     if (_keyConverter != null)
                     {
-                        reader.Read();
                         k = _keyConverter.Read(ref reader, _keyType, options);
                     }
                     else
@@ -165,10 +165,10 @@ namespace Weknow.Text.Json.Extensions
                     }
 
                     // Get the value.
+                    reader.Read();
                     TValue v;
                     if (_valueConverter != null)
                     {
-                        reader.Read();
                         v = _valueConverter.Read(ref reader, _valueType, options);
                     }
                     else
@@ -232,3 +232,4 @@ namespace Weknow.Text.Json.Extensions
         }
     }
 }
+

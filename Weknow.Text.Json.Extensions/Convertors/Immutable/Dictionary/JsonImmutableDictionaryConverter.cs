@@ -7,7 +7,7 @@ using System.Text.Json.Serialization;
 
 // credit: https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to
 
-namespace Weknow.Text.Json.Extensions
+namespace System.Text.Json
 {
     /// <summary>
     /// Json immutable dictionary converter

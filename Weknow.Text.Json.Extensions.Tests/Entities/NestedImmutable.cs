@@ -6,17 +6,17 @@ using System.Text;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {
-    public class Nested : IEquatable<Nested>
+    public class NestedImmutable : IEquatable<NestedImmutable>
     {
         public int Id { get; set; }
-        public Dictionary<ConsoleColor, string> Map { get; set; }
+        public ImmutableDictionary<string, ConsoleColor> Map { get; set; }
 
         public override bool Equals(object obj)
         {
-            return Equals(obj as Nested);
+            return Equals(obj as NestedImmutable);
         }
 
-        public bool Equals(Nested other)
+        public bool Equals(NestedImmutable other)
         {
             return other != null &&
                    Id == other.Id &&
@@ -28,12 +28,12 @@ namespace Weknow.Text.Json.Extensions.Tests
             return HashCode.Combine(Id, Map.Aggregate(0, (a, b) => a ^ b.Key.GetHashCode() ^ b.Value.GetHashCode()));
         }
 
-        public static bool operator ==(Nested left, Nested right)
+        public static bool operator ==(NestedImmutable left, NestedImmutable right)
         {
-            return EqualityComparer<Nested>.Default.Equals(left, right);
+            return EqualityComparer<NestedImmutable>.Default.Equals(left, right);
         }
 
-        public static bool operator !=(Nested left, Nested right)
+        public static bool operator !=(NestedImmutable left, NestedImmutable right)
         {
             return !(left == right);
         }
