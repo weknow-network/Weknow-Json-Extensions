@@ -51,5 +51,41 @@ namespace System.Text.Json
         }
 
         #endregion // AsString
+
+        #region ToStream
+
+        /// <summary>
+        /// Gets the json representation as Stream.
+        /// </summary>
+        /// <param name="json">The j.</param>
+        /// <param name="options">The options.</param>
+        /// <returns></returns>
+        public static Stream ToStream(
+            this JsonDocument json,
+            JsonWriterOptions options = default)
+        {
+            return json.RootElement.ToStream(options);
+        }
+
+        /// <summary>
+        /// Gets the json representation as string.
+        /// </summary>
+        /// <param name="json">The j.</param>
+        /// <param name="options">The options.</param>
+        /// <returns></returns>
+        public static Stream ToStream(
+            this JsonElement json,
+            JsonWriterOptions options = default)
+        {
+            var ms = new MemoryStream();
+            using (var w = new Utf8JsonWriter(ms, options))
+            {
+                json.WriteTo(w);
+            }
+            ms.Seek(0, SeekOrigin.Begin);
+            return ms;
+        }
+
+        #endregion // ToStream
     }
 }
