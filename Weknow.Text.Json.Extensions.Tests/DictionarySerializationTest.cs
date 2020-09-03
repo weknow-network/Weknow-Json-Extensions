@@ -63,7 +63,7 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #region Dictionary_String_Object_Test
 
-        [Fact]
+        [Fact(Skip = "not supported")]
         public void Dictionary_String_Object_Test()
         {
             var source = new Dictionary<string, object> 
