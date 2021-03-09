@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.Json;
 
 using Xunit;
 using Xunit.Sdk;
@@ -24,7 +25,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Dictionary_Test()
         {
-            var source = new Dictionary<ConsoleColor, string> 
+            var source = new Dictionary<ConsoleColor, string>
             {
                 [ConsoleColor.Blue] = nameof(ConsoleColor.Blue),
                 [ConsoleColor.White] = nameof(ConsoleColor.White)
@@ -40,7 +41,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact]
         public void Dictionary_WithoutConvertor_Test()
         {
-            var source = new Dictionary<ConsoleColor, string> 
+            var source = new Dictionary<ConsoleColor, string>
             {
                 [ConsoleColor.Blue] = nameof(ConsoleColor.Blue),
                 [ConsoleColor.White] = nameof(ConsoleColor.White)
@@ -66,7 +67,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [Fact(Skip = "not supported")]
         public void Dictionary_String_Object_Test()
         {
-            var source = new Dictionary<string, object> 
+            var source = new Dictionary<string, object>
             {
                 ["A"] = nameof(ConsoleColor.Blue),
                 ["B"] = new Foo(10, "Bamby", DateTime.Now)
@@ -111,7 +112,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void Dictionary_Complex_Value_Test()
         {
             var source = new Dictionary<int, Foo>
-            { 
+            {
                 [2] = new Foo(2, "B", DateTime.Now),
                 [3] = new Foo(3, "Q", DateTime.Now.AddDays(1))
             };
@@ -121,22 +122,51 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #endregion // Dictionary_Complex_Value_Test
 
-        #region Dictionary_Nested_Test
+        #region Dictionary_KeyValueStyle_Test
 
         [Fact]
-        public void Dictionary_Nested_Test()
+        public void Dictionary_KeyValueStyle_Test()
         {
-            var source = new Dictionary<ConsoleColor, string>
-            {
-                [ConsoleColor.Blue] = nameof(ConsoleColor.Blue),
-                [ConsoleColor.White] = nameof(ConsoleColor.White)
-            };
+			const string json = @"{
+	""kv"": [
+		{
+			""key"": ""X"",
+			""value"": [
+				""A"",
+				""B""
+			]
+		},
+		{
+			""key"": ""Y"",
+			""value"": [
+				""C"",
+				""D""
+			]
+		}
+	]
+}";
 
-            var nested = new Nested { Id = 2, Map = source};
-
-            nested.AssertSerialization();
+			var kvs = JsonSerializer.Deserialize<KeyValueStyle>(json, SerializerOptions);
+            var kv = kvs.KV;
+            kv["X"].SequenceEqual(new[] { "A", "B" });
+            kv["Y"].SequenceEqual(new[] { "C", "D" });
         }
 
-        #endregion // Dictionary_Nested_Test
+        #endregion // Dictionary_KeyValueStyle_Test
+
+        #region Dictionary_KeyValueStyle_auto_Test
+
+        [Fact]
+        public void Dictionary_KeyValueStyle_auto_Test()
+        {
+			var source = new KeyValueStyle
+			{
+				KV = ImmutableDictionary<string, string[]>.Empty.Add("X", new[] { "A", "B" })
+			};
+			source.AssertSerialization((a, b) => true);
+
+		}
+
+        #endregion // Dictionary_KeyValueStyle_auto_Test
     }
 }

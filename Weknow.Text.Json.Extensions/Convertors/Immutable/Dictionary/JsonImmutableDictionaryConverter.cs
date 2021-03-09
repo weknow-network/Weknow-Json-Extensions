@@ -77,7 +77,7 @@ namespace System.Text.Json
             Type keyType = type.GetGenericArguments()[0];
             Type valueType = type.GetGenericArguments()[1];
 
-            Type genType= typeof(ConvertStrategy<,>).MakeGenericType(
+            Type genType = typeof(ConvertStrategy<,>).MakeGenericType(
                     new Type[] { keyType, valueType });
             JsonConverter? converter = (JsonConverter?)Activator.CreateInstance(
                 genType,
@@ -155,10 +155,15 @@ namespace System.Text.Json
                 {
                     if (reader.TokenType != JsonTokenType.StartArray)
                     {
-                        throw new JsonException();
+                        if (reader.TokenType == JsonTokenType.StartObject)
+                        {
+                            var kv = JsonSerializer.Deserialize<KeyValuePair<TKey, TValue>>(ref reader, options);
+                            dictionary.Add(kv);
+                            continue;
+                        }
                     }
 
-                    // Get the key.
+                    // into the array.
                     reader.Read();
 
                     // Get the key.
