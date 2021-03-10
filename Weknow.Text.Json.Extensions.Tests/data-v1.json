@@ -1,0 +1,46 @@
+{
+  "name": "",
+  "product": "geo-overview",
+  "projectName": "bnaya",
+  "choices": [],
+  "geo": {
+    "regions": [
+      {
+        "key": "regions-asia-oceania",
+        "value": []
+      }
+    ],
+    "countries": []
+  },
+  "orderFiles": [],
+  "manualText": "",
+  "chaptersChoices": [
+    {
+      "key": "general-overview",
+      "value": [ "general-overview", "brief-history", "geography", "map", "location", "neighboring-countries", "area-square-km", "terrain-topography", "climate", "natural-resources", "land-use", "natural-hazards", "population-distribution", "maritime-claims", "time-zone-s" ]
+    },
+    {
+      "key": "people-and-society",
+      "value": [ "people-and-society", "crime" ]
+    }
+  ],
+  "profileObjective": "",
+  "profileObjectiveTargets": "",
+  "target": "",
+  "customerDetails": {},
+  "pricing": {
+    "token": "",
+    "expertise": "",
+    "deliveryKey": 0
+  },
+  "entityCount": 0,
+  "finalNote": "",
+  "geoType": "regions",
+  "benchmarkTableData": [],
+  "profileTargetList": [],
+  "benchmarkDesc": {},
+  "profileObjectiveDetails": {
+    "objective": "",
+    "objectiveTargets": ""
+  }
+}

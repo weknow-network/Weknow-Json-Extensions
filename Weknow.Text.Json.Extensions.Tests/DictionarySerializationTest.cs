@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 
@@ -168,5 +169,14 @@ namespace Weknow.Text.Json.Extensions.Tests
 		}
 
         #endregion // Dictionary_KeyValueStyle_auto_Test
+
+        [Fact]
+        public void FromFile_Test()
+        {
+            string json = File.ReadAllText("data-v1.json");
+            var request = JsonSerializer.Deserialize<FromFile>(json, SerializerOptions);
+
+            Assert.NotEmpty(request.ChaptersChoices);
+        }
     }
 }

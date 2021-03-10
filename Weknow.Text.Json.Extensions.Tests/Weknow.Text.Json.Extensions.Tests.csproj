@@ -21,4 +21,10 @@
     <ProjectReference Include="..\Weknow.Text.Json.Extensions\Weknow.Text.Json.Extensions.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="data-v1.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
