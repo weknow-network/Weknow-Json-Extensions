@@ -9,7 +9,7 @@ using System.Text.Json;
 using Xunit;
 using Xunit.Sdk;
 
-using static Weknow.Text.Json.Extensions.Tests.Constants;
+using static Weknow.Text.Json.Constants;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {

@@ -188,7 +188,9 @@ namespace System.Text.Json
                     }
 
                     // Add to dictionary.
+#pragma warning disable CS8604 // Possible null reference argument.
                     dictionary.Add(k, v);
+#pragma warning restore CS8604 // Possible null reference argument.
 
                     reader.Read(); // end array
                 }

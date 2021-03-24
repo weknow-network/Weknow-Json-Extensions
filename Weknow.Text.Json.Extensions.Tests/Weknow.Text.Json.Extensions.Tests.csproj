@@ -7,6 +7,9 @@
     <Copyright>Weknow ©</Copyright>
     <Authors>Weknow</Authors>
     <Company>Weknow</Company>
+    <Version>5.0.8</Version>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>icon.png</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>

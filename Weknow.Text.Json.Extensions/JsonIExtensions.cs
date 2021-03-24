@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
+using static Weknow.Text.Json.Constants;
+
 // credit: https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to
 
 namespace System.Text.Json
@@ -87,5 +89,25 @@ namespace System.Text.Json
         }
 
         #endregion // ToStream
+
+        #region Serialize
+
+        /// <summary>
+        /// Serializes the specified instance.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="instance">The instance.</param>
+        /// <param name="options">The options.</param>
+        /// <returns></returns>
+        public static string Serialize<T>(
+            this T instance,
+            JsonSerializerOptions? options = null)
+        {
+            options = options ?? SerializerOptions;
+            string json = JsonSerializer.Serialize(instance, options);
+            return json;
+        }
+
+        #endregion // Serialize
     }
 }

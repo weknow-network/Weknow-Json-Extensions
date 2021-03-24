@@ -8,8 +8,8 @@
     <Copyright>Weknow ©</Copyright>
     <Authors>Weknow</Authors>
     <Company>Weknow</Company>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>5.0.7</Version>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Version>5.0.8</Version>
     <Configurations>Debug;Release</Configurations>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/weknow-network/Weknow-Json-Extensions</RepositoryUrl>

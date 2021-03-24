@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Weknow.Text.Json.Extensions.Tests
+namespace Weknow.Text.Json
 {
     /// <summary>
     /// Json related
@@ -22,7 +22,16 @@ namespace Weknow.Text.Json.Extensions.Tests
                 // PropertyNameCaseInsensitive = true,
                 // IgnoreNullValues = true,
                 WriteIndented = true,
-                Converters = { EnumConvertor, JsonDictionaryConverter.Default, JsonImmutableDictionaryConverter.Default }
+                Converters = { EnumConvertor, /* JsonDictionaryConverter.Default, */ JsonImmutableDictionaryConverter.Default  }
+            };
+            SerializerOptionsWithStandardDictionary = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DictionaryKeyPolicy = JsonNamingPolicy.CamelCase,
+                // PropertyNameCaseInsensitive = true,
+                // IgnoreNullValues = true,
+                WriteIndented = true,
+                Converters = { EnumConvertor,  JsonDictionaryConverter.Default,  JsonImmutableDictionaryConverter.Default  }
             };
             SerializerOptionsWithoutConverters = new JsonSerializerOptions
             {
@@ -39,6 +48,11 @@ namespace Weknow.Text.Json.Extensions.Tests
         /// Gets the serializer options with indent.
         /// </summary>
         public static JsonSerializerOptions SerializerOptions { get; }
+
+        /// <summary>
+        /// Gets the serializer options with indent & with standard dictionary convertor .
+        /// </summary>
+        public static JsonSerializerOptions SerializerOptionsWithStandardDictionary { get; }
         /// <summary>
         /// Gets the serializer options with indent.
         /// </summary>

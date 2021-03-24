@@ -8,7 +8,7 @@ using System.Text.Json;
 using Xunit;
 using Xunit.Sdk;
 
-using static Weknow.Text.Json.Extensions.Tests.Constants;
+using static Weknow.Text.Json.Constants;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {
@@ -39,7 +39,7 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #region Dictionary_WithoutConvertor_Test
 
-        [Fact]
+        [Fact(Skip = "work on .NET 5")]
         public void Dictionary_WithoutConvertor_Test()
         {
             var source = new Dictionary<ConsoleColor, string>
@@ -102,10 +102,34 @@ namespace Weknow.Text.Json.Extensions.Tests
                 [new Foo(3, "Q", DateTime.Now.AddDays(1))] = "Q"
             };
 
-            source.AssertSerialization((a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value));
+            source.AssertSerialization((a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value), options: SerializerOptionsWithStandardDictionary);
         }
 
         #endregion // Dictionary_Complex_Key_Test
+
+        #region Dictionary_Complex_Key_Without_ConvertorTest
+
+        [Fact]
+        public void Dictionary_Complex_Key_Without_ConvertorTest()
+        {
+            var source = new Dictionary<Foo, string>
+            {
+                [new Foo(2, "B", DateTime.Now)] = "B",
+                [new Foo(3, "Q", DateTime.Now.AddDays(1))] = "Q"
+            };
+
+            try
+            {
+                source.AssertSerialization((a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value));
+                throw new Exception("Unexpected");
+            }
+            catch (NotSupportedException)
+            {
+                // expected
+            }
+        }
+
+        #endregion // Dictionary_Complex_Key_Without_ConvertorTest
 
         #region Dictionary_Complex_Value_Test
 

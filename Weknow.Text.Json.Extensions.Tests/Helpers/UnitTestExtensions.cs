@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text.Json;
 
-using static Weknow.Text.Json.Extensions.Tests.Constants;
+using static Weknow.Text.Json.Constants;
 
 namespace Xunit
 {
