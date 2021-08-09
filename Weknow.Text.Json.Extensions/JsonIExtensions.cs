@@ -119,14 +119,19 @@ namespace System.Text.Json
         /// <param name="doc">The element.</param>
         /// <param name="filter">The filter which determine whether to keep the property.</param>
         /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
-        public static JsonDocument WhereProp(this JsonDocument doc, Func<JsonProperty, bool> filter, byte deep = 0)
+        public static JsonDocument WhereProp(
+            this JsonDocument doc,
+            Func<JsonProperty, bool> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                doc.RootElement.WhereImp(writer, filter, null, deep);
+                doc.RootElement.WhereImp(writer, filter, null, onRemove, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -139,14 +144,19 @@ namespace System.Text.Json
         /// <param name="element">The element.</param>
         /// <param name="filter">The filter which determine whether to keep the property.</param>
         /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
-        public static JsonElement WhereProp(this JsonElement element, Func<JsonProperty, bool> filter, byte deep = 0)
+        public static JsonElement WhereProp(
+            this JsonElement element,
+            Func<JsonProperty, bool> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                element.WhereImp(writer, filter, null, deep);
+                element.WhereImp(writer, filter, null, onRemove, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -170,7 +180,7 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                doc.RootElement.WhereImp(writer, null, filter, deep);
+                doc.RootElement.WhereImp(writer, null, filter, null, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -190,7 +200,7 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                element.WhereImp(writer, null, filter, deep);
+                element.WhereImp(writer, null, filter, null, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -208,6 +218,7 @@ namespace System.Text.Json
         /// <param name="writer">The writer.</param>
         /// <param name="propFilter">The property filter.</param>
         /// <param name="elementFilter">The element filter.</param>
+        /// <param name="onRemove">On remove property notification.</param>
         /// <param name="deep">The recursive deep (0 = only root elements).</param>
         /// <param name="curDeep">The current deep.</param>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
@@ -216,6 +227,7 @@ namespace System.Text.Json
             Utf8JsonWriter writer,
             Func<JsonProperty, bool>? propFilter,
             Func<JsonElement, bool>? elementFilter,
+            Action<JsonProperty>? onRemove,
             byte deep = 0,
             byte curDeep = 0)
         {
@@ -229,7 +241,11 @@ namespace System.Text.Json
                 writer.WriteStartObject();
                 foreach (JsonProperty e in element.EnumerateObject())
                 {
-                    if (!(propFilter?.Invoke(e) ?? true)) continue;
+                    if (!(propFilter?.Invoke(e) ?? true))
+                    {
+                        onRemove?.Invoke(e);
+                        continue;
+                    }
                     if (curDeep > deep)
                     {
                         e.WriteTo(writer);
@@ -239,12 +255,12 @@ namespace System.Text.Json
                     if (v.ValueKind == JsonValueKind.Object)
                     {
                         writer.WritePropertyName(e.Name);
-                        v.WhereImp(writer, propFilter, elementFilter, deep, (byte)(curDeep + 1));
+                        v.WhereImp(writer, propFilter, elementFilter, onRemove, deep, (byte)(curDeep + 1));
                     }
                     else if (v.ValueKind == JsonValueKind.Array)
                     {
                         writer.WritePropertyName(e.Name);
-                        v.WhereImp(writer, propFilter, elementFilter, deep, (byte)(curDeep + 1));
+                        v.WhereImp(writer, propFilter, elementFilter, onRemove, deep, (byte)(curDeep + 1));
                     }
                     else
                     {
@@ -262,7 +278,7 @@ namespace System.Text.Json
                 foreach (JsonElement e in element.EnumerateArray())
                 {
                     if (elementFilter?.Invoke(e) ?? true)
-                        e.WhereImp(writer, propFilter, elementFilter, deep, (byte)(curDeep + 1));
+                        e.WhereImp(writer, propFilter, elementFilter, onRemove, deep, (byte)(curDeep + 1));
                 }
                 writer.WriteEndArray();
             }

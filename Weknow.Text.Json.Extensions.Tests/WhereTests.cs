@@ -1,3 +1,5 @@
+using FakeItEasy;
+
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
@@ -17,6 +19,7 @@ namespace Weknow.Text.Json.Extensions.Tests
     public class WhereTests
     {
         private readonly ITestOutputHelper _outputHelper;
+        private Action<JsonProperty> _fakeOnRemove = A.Fake<Action<JsonProperty>>();
 
         #region Ctor
 
@@ -99,7 +102,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void WhereProp_Root_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp(m => m.Name != "C");
+            var target = source.RootElement.WhereProp(m => m.Name != "C", onRemove: _fakeOnRemove);
 
             _outputHelper.WriteLine(target.GetRawText());
 
@@ -113,13 +116,17 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(target.TryGetProperty("D", out var d));
             Assert.True(d[0].TryGetProperty("D1", out var d1));
             Assert.Equal(1, d1.GetInt32());
+            A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.That.Matches(p => p.Name == "C")))
+                .MustHaveHappenedOnceExactly();
+            A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.Ignored))
+                .MustHaveHappenedOnceExactly();
         }
 
         [Fact]
         public void WhereProp_Root_Branch_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp(m => m.Name != "B");
+            var target = source.RootElement.WhereProp(m => m.Name != "B", onRemove: _fakeOnRemove);
 
             _outputHelper.WriteLine(target.GetRawText());
 
@@ -128,13 +135,17 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(target.TryGetProperty("C", out var c));
             Assert.Equal("C1", c[0].GetString());
             Assert.Equal("C2", c[1].GetString());
+            A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.That.Matches(p => p.Name == "B")))
+                                                .MustHaveHappenedOnceExactly();
+            A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.Ignored))
+                                                .MustHaveHappenedOnceExactly();
         }
 
         [Fact]
         public void WhereProp_Recurcive_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp(m => m.Name != "B21", 35);
+            var target = source.RootElement.WhereProp(m => m.Name != "B21", 35, onRemove: _fakeOnRemove);
 
             _outputHelper.WriteLine(target.GetRawText());
 
@@ -145,13 +156,17 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.False(b2.TryGetProperty("B21", out _));
             Assert.True(b2.TryGetProperty("B22", out _));
             Assert.True(target.TryGetProperty("C", out _));
+            A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.That.Matches(p => p.Name == "B21")))
+                                                .MustHaveHappenedOnceExactly();
+            A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.Ignored))
+                                                .MustHaveHappenedOnceExactly();
         }
 
         [Fact]
         public void WhereProp_Recurcive_Shallow_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp(m => m.Name != "B21", 1);
+            var target = source.RootElement.WhereProp(m => m.Name != "B21", 1, onRemove: _fakeOnRemove);
 
             _outputHelper.WriteLine(target.GetRawText());
 
@@ -162,6 +177,8 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(b2.TryGetProperty("B21", out _));
             Assert.True(b2.TryGetProperty("B22", out _));
             Assert.True(target.TryGetProperty("C", out _));
+            A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.Ignored))
+                                                .MustNotHaveHappened();
         }
     }
 }
