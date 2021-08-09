@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
@@ -109,5 +110,41 @@ namespace System.Text.Json
         }
 
         #endregion // Serialize
+
+        #region Where
+
+        /// <summary>
+        /// Where operation, exclude some root level properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter">The filter.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement Where(this JsonElement element, Func<JsonProperty, bool> filter)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                if (element.ValueKind == JsonValueKind.Object)
+                {
+                    writer.WriteStartObject();
+                    foreach (JsonProperty e in element.EnumerateObject())
+                    {
+                        if (filter(e))
+                            e.WriteTo(writer);
+                    }
+                    writer.WriteEndObject();
+                }
+                else
+                {
+                    throw new NotSupportedException("Only 'Object' element are supported");
+                }
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        #endregion // Where
     }
 }
