@@ -33,3 +33,8 @@ jobs:
 
     - name: Push generated package 
       run: dotnet nuget push ./**/out/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols true
+    
+    - uses: actions/checkout@master
+    - uses: codecov/codecov-action@v2
+      with:
+        fail_ci_if_error: true # optional (default = false)
