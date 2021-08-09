@@ -8,7 +8,7 @@
     <Copyright>Weknow ©</Copyright>
     <Authors>Weknow</Authors>
     <Company>Weknow</Company>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Version>5.0.9</Version>
     <Configurations>Debug;Release</Configurations>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
