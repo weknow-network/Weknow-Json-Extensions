@@ -111,34 +111,86 @@ namespace System.Text.Json
 
         #endregion // Serialize
 
+        #region WhereProp
+
+        /// <summary>
+        /// Where operation, exclude some root level properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter">The filter which determine whether to keep the property.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonDocument WhereProp(this JsonDocument doc, Func<JsonProperty, bool> filter, byte deep = 0)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                doc.RootElement.WhereImp(writer, filter, null, deep);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result;
+        }
+
+        /// <summary>
+        /// Where operation, exclude some root level properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter">The filter which determine whether to keep the property.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement WhereProp(this JsonElement element, Func<JsonProperty, bool> filter, byte deep = 0)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                element.WhereImp(writer, filter, null, deep);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        #endregion // WhereProp
+
         #region Where
+
+        /// <summary>
+        /// Where operation, exclude some root level properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter">The filter.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonDocument Where(this JsonDocument doc, Func<JsonElement, bool> filter, byte deep = 0)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                doc.RootElement.WhereImp(writer, null, filter, deep);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result;
+        }
 
         /// <summary>
         /// Where operation, exclude some root level properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="filter">The filter.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
-        public static JsonElement Where(this JsonElement element, Func<JsonProperty, bool> filter)
+        public static JsonElement Where(this JsonElement element, Func<JsonElement, bool> filter, byte deep = 0)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                if (element.ValueKind == JsonValueKind.Object)
-                {
-                    writer.WriteStartObject();
-                    foreach (JsonProperty e in element.EnumerateObject())
-                    {
-                        if (filter(e))
-                            e.WriteTo(writer);
-                    }
-                    writer.WriteEndObject();
-                }
-                else
-                {
-                    throw new NotSupportedException("Only 'Object' element are supported");
-                }
+                element.WhereImp(writer, null, filter, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -146,5 +198,81 @@ namespace System.Text.Json
         }
 
         #endregion // Where
+
+        #region WhereImp
+
+        /// <summary>
+        /// Where operation, exclude some root level properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="writer">The writer.</param>
+        /// <param name="propFilter">The property filter.</param>
+        /// <param name="elementFilter">The element filter.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <param name="curDeep">The current deep.</param>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        private static void WhereImp(
+            this JsonElement element,
+            Utf8JsonWriter writer,
+            Func<JsonProperty, bool>? propFilter,
+            Func<JsonElement, bool>? elementFilter,
+            byte deep = 0,
+            byte curDeep = 0)
+        {
+            if (curDeep > deep)
+            {
+                element.WriteTo(writer);
+                return;
+            }
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                writer.WriteStartObject();
+                foreach (JsonProperty e in element.EnumerateObject())
+                {
+                    if (!(propFilter?.Invoke(e) ?? true)) continue;
+                    if (curDeep > deep)
+                    {
+                        e.WriteTo(writer);
+                        continue;
+                    }
+                    JsonElement v = e.Value;
+                    if (v.ValueKind == JsonValueKind.Object)
+                    {
+                        writer.WritePropertyName(e.Name);
+                        v.WhereImp(writer, propFilter, elementFilter, deep, (byte)(curDeep + 1));
+                    }
+                    else if (v.ValueKind == JsonValueKind.Array)
+                    {
+                        writer.WritePropertyName(e.Name);
+                        v.WhereImp(writer, propFilter, elementFilter, deep, (byte)(curDeep + 1));
+                    }
+                    else
+                    {
+                        if (elementFilter?.Invoke(v) ?? true)
+                            e.WriteTo(writer);
+                        else if (propFilter == null)
+                            writer.WriteNull(e.Name);
+                    }
+                }
+                writer.WriteEndObject();
+            }
+            else if (element.ValueKind == JsonValueKind.Array)
+            {
+                writer.WriteStartArray();
+                foreach (JsonElement e in element.EnumerateArray())
+                {
+                    if (elementFilter?.Invoke(e) ?? true)
+                        e.WhereImp(writer, propFilter, elementFilter, deep, (byte)(curDeep + 1));
+                }
+                writer.WriteEndArray();
+            }
+            else
+            {
+                if (elementFilter?.Invoke(element) ?? false)
+                    element.WriteTo(writer);
+            }
+        }
+
+        #endregion // WhereImp
     }
 }

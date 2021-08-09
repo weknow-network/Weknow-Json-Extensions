@@ -165,6 +165,7 @@ namespace System.Text.Json
                     reader.Read();
 
                     // Get the key.
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
                     TKey k;
                     if (_keyConverter != null)
                     {
@@ -186,6 +187,7 @@ namespace System.Text.Json
                     {
                         v = JsonSerializer.Deserialize<TValue>(ref reader, options);
                     }
+#pragma warning restore CS8600 // Converting null literal or possible null value to non-nullable type.
 
                     // Add to dictionary.
 #pragma warning disable CS8604 // Possible null reference argument.
