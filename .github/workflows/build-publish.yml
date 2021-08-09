@@ -31,5 +31,5 @@ jobs:
     - name: Test
       run: dotnet test --configuration Release --no-restore --no-build --verbosity normal -o out
 
-    - name: Push generated package to GitHub registry
+    - name: Push generated package 
       run: dotnet nuget push ./**/out/*.nupkg -k ${{ secrets.NUGET_API_EVENT_SOURCE_KEY }} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols true
