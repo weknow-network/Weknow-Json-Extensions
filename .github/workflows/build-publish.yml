@@ -31,6 +31,18 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VER }}
           include-prerelease: ${{ env.INCLUDE_PRERELEASE }}
+          
+      - name: Increment Version
+        run: |
+          perl -pi -e 's/([0-9]+)\.([0-9]+)\.([0-9]+)/"$1.$2.${\( $3+1 )}"/eg' Directory.Build.props
+        shell: bash
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: CI/CD
+          author_email: ${{ inputs.author-email }}
+          message: "Increment Version"
+          add: "Directory.Build.props"
 
       - name: Restore dependencies
         run: dotnet restore /property:Configuration=${{ env.BUILD_CONFIG }}
