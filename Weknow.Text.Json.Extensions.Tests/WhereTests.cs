@@ -18,6 +18,9 @@ namespace Weknow.Text.Json.Extensions.Tests
 {
     public class WhereTests
     {
+        private static readonly JsonWriterOptions OPT_INDENT =
+                        new JsonWriterOptions { Indented = true };
+
         private readonly ITestOutputHelper _outputHelper;
         private Action<JsonProperty> _fakeOnRemove = A.Fake<Action<JsonProperty>>();
 
@@ -48,6 +51,14 @@ namespace Weknow.Text.Json.Extensions.Tests
 }
 ";
 
+        private void Write(JsonDocument source, JsonElement target)
+        {
+            _outputHelper.WriteLine("Source:-----------------");
+            _outputHelper.WriteLine(source.RootElement.AsString());
+            _outputHelper.WriteLine("Target:-----------------");
+            _outputHelper.WriteLine(target.AsString());
+        }
+
         [Fact]
         public void Where_Root_Test()
         {
@@ -56,7 +67,7 @@ namespace Weknow.Text.Json.Extensions.Tests
                                     // remove property with value or raw value elements if > 12
                                     m.ValueKind != JsonValueKind.Number || m.GetInt32() > 12);
 
-            _outputHelper.WriteLine(target.GetRawText());
+            Write(source, target);
 
             Assert.True(target.TryGetProperty("A", out var a));
             Assert.True(a.ValueKind == JsonValueKind.Null);
@@ -81,7 +92,7 @@ namespace Weknow.Text.Json.Extensions.Tests
                                     // remove property with value or raw value elements if > 12
                                     m.ValueKind != JsonValueKind.Number || m.GetInt32() > 12, 5);
 
-            _outputHelper.WriteLine(target.GetRawText());
+            Write(source, target);
 
             Assert.True(target.TryGetProperty("A", out var a));
             Assert.True(a.ValueKind == JsonValueKind.Null);
@@ -104,7 +115,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             var source = JsonDocument.Parse(JSON_INDENT);
             var target = source.RootElement.WhereProp(m => m.Name != "C", onRemove: _fakeOnRemove);
 
-            _outputHelper.WriteLine(target.GetRawText());
+            Write(source, target);
 
             Assert.True(target.TryGetProperty("A", out _));
             Assert.True(target.TryGetProperty("B", out var b));
@@ -128,7 +139,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             var source = JsonDocument.Parse(JSON_INDENT);
             var target = source.RootElement.WhereProp(m => m.Name != "B", onRemove: _fakeOnRemove);
 
-            _outputHelper.WriteLine(target.GetRawText());
+            Write(source, target);
 
             Assert.True(target.TryGetProperty("A", out _));
             Assert.False(target.TryGetProperty("B", out _));
@@ -147,7 +158,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             var source = JsonDocument.Parse(JSON_INDENT);
             var target = source.RootElement.WhereProp(m => m.Name != "B21", 35, onRemove: _fakeOnRemove);
 
-            _outputHelper.WriteLine(target.GetRawText());
+            Write(source, target);
 
             Assert.True(target.TryGetProperty("A", out _));
             Assert.True(target.TryGetProperty("B", out var b));
@@ -168,7 +179,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             var source = JsonDocument.Parse(JSON_INDENT);
             var target = source.RootElement.WhereProp(m => m.Name != "B21", 1, onRemove: _fakeOnRemove);
 
-            _outputHelper.WriteLine(target.GetRawText());
+            Write(source, target);
 
             Assert.True(target.TryGetProperty("A", out _));
             Assert.True(target.TryGetProperty("B", out var b));

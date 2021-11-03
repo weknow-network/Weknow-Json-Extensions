@@ -1,28 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>9.0</LangVersion>
-    <Nullable>enable</Nullable>
-    <RootNamespace>Weknow.Backend</RootNamespace>
-    <Copyright>Weknow ©</Copyright>
-    <Authors>Weknow</Authors>
-    <Company>Weknow</Company>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-    <Version>5.0.11</Version>
-    <Configurations>Debug;Release</Configurations>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/weknow-network/Weknow-Json-Extensions</RepositoryUrl>
-    <PackageIcon>icon.png</PackageIcon>
-    <PackageIconUrl />
-  </PropertyGroup>
 
-  <ItemGroup>
-    <None Include="icon.png">
-      <Pack>True</Pack>
-      <PackagePath>
-      </PackagePath>
-    </None>
-  </ItemGroup>
 
 </Project>

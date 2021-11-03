@@ -16,13 +16,13 @@ namespace Xunit
         /// <param name="userMessage"></param>
         public static void AssertSerialization<T>(
             this T testData,
-            Func<T, T, bool> equalityCheck = null,
-            string userMessage = null,
+            Func<T, T, bool>? equalityCheck = null,
+            string? userMessage = null,
             JsonSerializerOptions options = null)
         {
             options = options ?? SerializerOptions;
             string json = JsonSerializer.Serialize(testData, options);
-            T deserialized = JsonSerializer.Deserialize<T>(json, options);
+            T deserialized = JsonSerializer.Deserialize<T>(json, options) ?? throw new ArgumentNullException();
 
             bool equals = equalityCheck?.Invoke(testData, deserialized) ??
                           object.Equals(testData, deserialized);

@@ -1,35 +1,45 @@
 name: .NET Build & Publish NuGet V2
-  
+
 on:
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:
     inputs:
       logLevel:
-        description: 'Log level'     
+        description: "Log level"
         required: false
-        default: 'warning'
+        default: "warning"
+
+env: # https://docs.github.com/en/actions/learn-github-actions/environment-variables
+  BUILD_CONFIG: Release
+  DOTNET_VER: 5.0.x
+  INCLUDE_PRERELEASE: false
+  # DOTNET_VER: 6.0.x
+  # INCLUDE_PRERELEASE: true
 
 jobs:
   build:
-
     name: build
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 5.0.x
-    - name: Restore dependencies
-      run: dotnet restore /property:Configuration=Release
-    - name: Build
-      run: dotnet build  --configuration Release --no-restore -o out
-    - name: Test
-      run: dotnet test --configuration Release --no-restore --no-build --verbosity normal -o out
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: ${{ env.DOTNET_VER }}
+          include-prerelease: ${{ env.INCLUDE_PRERELEASE }}
 
-    - name: Push generated package 
-      run: dotnet nuget push ./**/out/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols true
+      - name: Restore dependencies
+        run: dotnet restore /property:Configuration=${{ env.BUILD_CONFIG }}
+
+      - name: Build
+        run: dotnet build --configuration ${{ env.BUILD_CONFIG }} --no-restore -o out
+
+      - name: Test
+        run: dotnet test --configuration ${{ env.BUILD_CONFIG }} --no-restore --no-build --verbosity normal -o out
+
+      - name: Push generated package
+        run: dotnet nuget push ./**/out/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate --no-symbols true

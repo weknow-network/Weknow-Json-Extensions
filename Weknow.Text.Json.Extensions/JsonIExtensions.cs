@@ -111,6 +111,29 @@ namespace System.Text.Json
 
         #endregion // Serialize
 
+        #region ToJson
+
+        /// <summary>
+        /// Convert instance to JsonElement.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="instance">The instance.</param>
+        /// <param name="options">The options (used for the serialization).</param>
+        /// <returns></returns>
+        public static JsonElement ToJson<T>(
+            this T instance,
+            JsonSerializerOptions? options = null)
+        {
+            options = options ?? SerializerOptions;
+            byte[]? j = JsonSerializer.SerializeToUtf8Bytes(instance, options);
+            if (j == null)
+                return new JsonElement();
+            var json = JsonDocument.Parse(j);
+            return json.RootElement;
+        }
+
+        #endregion // ToJson
+
         #region WhereProp
 
         /// <summary>
