@@ -14,6 +14,7 @@ using static Weknow.Text.Json.Constants;
 
 namespace System.Text.Json
 {
+
     /// <summary>
     /// Json extensions
     /// </summary>
@@ -44,6 +45,8 @@ namespace System.Text.Json
             this JsonElement json,
             JsonWriterOptions options = default)
         {
+            if (json.ValueKind == JsonValueKind.Undefined)
+                return String.Empty;
             using var ms = new MemoryStream();
             using (var w = new Utf8JsonWriter(ms, options))
             {
@@ -137,7 +140,7 @@ namespace System.Text.Json
         #region WhereProp
 
         /// <summary>
-        /// Where operation, exclude some root level properties according to a filter.
+        /// Where operation, exclude root level properties according to a filter.
         /// </summary>
         /// <param name="doc">The element.</param>
         /// <param name="filter">The filter which determine whether to keep the property.</param>
@@ -162,7 +165,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Where operation, exclude some root level properties according to a filter.
+        /// Where operation, exclude root level properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="filter">The filter which determine whether to keep the property.</param>
@@ -191,7 +194,7 @@ namespace System.Text.Json
         #region Where
 
         /// <summary>
-        /// Where operation, exclude some root level properties according to a filter.
+        /// Where operation, exclude json parts according to a filter.
         /// </summary>
         /// <param name="doc">The element.</param>
         /// <param name="filter">The filter.</param>
@@ -211,7 +214,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Where operation, exclude some root level properties according to a filter.
+        /// Where operation, exclude json parts according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="filter">The filter.</param>
@@ -232,10 +235,68 @@ namespace System.Text.Json
 
         #endregion // Where
 
+        #region SplitProp
+
+        /// <summary>
+        /// Split operation, split root level properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="propName">The property name.</param>
+        /// <param name="propParentName">The name of the parent property.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static SplitResult SplitProp(
+            this JsonDocument doc,
+            string propName,
+            string? propParentName = null,
+            byte deep = 0)
+        {
+            return SplitProp(doc.RootElement, propName, propParentName, deep);
+        }
+
+        /// <summary>
+        /// Split operation, split root level properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="propName">The property name.</param>
+        /// <param name="propParentName">The name of the parent property.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static SplitResult SplitProp(
+            this JsonElement element,
+            string propName,
+            string? propParentName = null,
+            byte deep = 0)
+        {
+            var bufferWriterPositive = new ArrayBufferWriter<byte>();
+            var bufferWriterNegative = new ArrayBufferWriter<byte>();
+            using (var writerPositive = new Utf8JsonWriter(bufferWriterPositive))
+            using (var writerNegative = new Utf8JsonWriter(bufferWriterNegative))
+            {
+                element.SplitPropImp(writerPositive, writerNegative, propName, propParentName, deep);
+            }
+            JsonDocument? positive = null, negative = null;
+            if (bufferWriterPositive.WrittenSpan.Length > 0)
+            {
+                var readerPositive = new Utf8JsonReader(bufferWriterPositive.WrittenSpan);
+                positive = JsonDocument.ParseValue(ref readerPositive);
+            }
+            if (bufferWriterNegative.WrittenSpan.Length > 0)
+            {
+                var readerNegative = new Utf8JsonReader(bufferWriterNegative.WrittenSpan);
+                negative = JsonDocument.ParseValue(ref readerNegative);
+            }
+            return new SplitResult(positive?.RootElement ?? new JsonElement(), negative?.RootElement ?? new JsonElement());
+        }
+
+        #endregion // SplitProp
+
         #region WhereImp
 
         /// <summary>
-        /// Where operation, exclude some root level properties according to a filter.
+        /// Where operation, exclude root level properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="writer">The writer.</param>
@@ -313,5 +374,134 @@ namespace System.Text.Json
         }
 
         #endregion // WhereImp
+
+
+        #region SplitPropImp
+
+        /// <summary>
+        /// Split operation, exclude root level properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="positiveWriter">The positive writer.</param>
+        /// <param name="negativeWriter">The negative writer.</param>
+        /// <param name="propName">The property name.</param>
+        /// <param name="propParentName">The name of the parent property.</param>
+        /// <param name="onRemove">On remove property notification.</param>
+        /// <param name="deep">The recursive deep (0 = only root elements).</param>
+        /// <param name="curDeep">The current deep.</param>
+        /// <param name="isParentEquals"></param>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        private static void SplitPropImp(
+            this JsonElement element,
+            Utf8JsonWriter? positiveWriter,
+            Utf8JsonWriter? negativeWriter,
+            string propName,
+            string? propParentName = null,
+            byte deep = 0,
+            byte curDeep = 0,
+            bool isParentEquals = false)
+        {
+            if (positiveWriter == null && negativeWriter == null) return;
+
+            if (curDeep > deep)
+            {
+                if (negativeWriter != null)
+                    element.WriteTo(negativeWriter);
+                return;
+            }
+
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+
+                negativeWriter?.WriteStartObject();
+
+                foreach (JsonProperty e in element.EnumerateObject())
+                {
+                    if (curDeep > deep)
+                    {
+                        if (negativeWriter != null)
+                            e.WriteTo(negativeWriter);
+                        continue;
+                    }
+                    JsonElement v = e.Value;
+                    bool isEquals = e.Name == propName;
+                    if (propParentName == null)
+                    {
+                        if (isEquals)
+                        {
+                            if (positiveWriter != null)
+                            {
+
+                                positiveWriter.WriteStartObject();
+                                positiveWriter.WritePropertyName(e.Name);
+                                v.WriteTo(positiveWriter);
+                                positiveWriter.WriteEndObject();
+                            }
+                            continue;
+                        }
+                    }
+                    else if (isParentEquals)
+                    {
+                        if (isEquals)
+                        {
+                            if (positiveWriter != null)
+                            {
+
+                                positiveWriter.WriteStartObject();
+                                positiveWriter.WritePropertyName(e.Name);
+                                v.WriteTo(positiveWriter);
+                                positiveWriter.WriteEndObject();
+                            }
+                        }
+                    }
+
+                    if (v.ValueKind == JsonValueKind.Object)
+                    {
+                        negativeWriter?.WritePropertyName(e.Name);
+                        v.SplitPropImp(positiveWriter, negativeWriter,
+                                       propName, propParentName,
+                                       deep, (byte)(curDeep + 1),
+                                       e.Name == propParentName);
+                    }
+                    else if (v.ValueKind == JsonValueKind.Array)
+                    {
+                        negativeWriter?.WritePropertyName(e.Name);
+                        v.SplitPropImp(positiveWriter, negativeWriter,
+                                       propName, propParentName,
+                                       deep, (byte)(curDeep + 1),
+                                       e.Name == propParentName);
+                    }
+                    else
+                    {
+                        if (negativeWriter != null)
+                        {
+                            negativeWriter.WritePropertyName(e.Name);
+                            v.WriteTo(negativeWriter);
+                            continue;
+                        }
+                    }
+                }
+                negativeWriter?.WriteEndObject();
+            }
+            else if (element.ValueKind == JsonValueKind.Array)
+            {
+                negativeWriter?.WriteStartArray();
+                foreach (JsonElement e in element.EnumerateArray())
+                {
+                    e.SplitPropImp(positiveWriter, negativeWriter,
+                                   propName, propParentName,
+                                   deep, (byte)(curDeep + 1),
+                                   isParentEquals);
+                }
+                negativeWriter?.WriteEndArray();
+            }
+            else
+            {
+                if (negativeWriter != null)
+                    element.WriteTo(negativeWriter);
+            }
+        }
+
+        #endregion // SplitPropImp
     }
 }
