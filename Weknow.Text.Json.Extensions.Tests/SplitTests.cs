@@ -89,6 +89,35 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
+        public void SplitProp_Root_Multi_Test()
+        {
+            var source = JsonDocument.Parse(JSON_INDENT);
+            var (positive, negative) = source.RootElement.SplitProp("C", "A");
+
+            Write(source, positive, negative);
+
+            Assert.False(negative.TryGetProperty("A", out _));
+            Assert.True(negative.TryGetProperty("B", out var b));
+            Assert.True(b.TryGetProperty("B1", out _));
+            Assert.True(b.TryGetProperty("B2", out var b2));
+            Assert.True(b2.TryGetProperty("B21", out _));
+            Assert.True(b2.TryGetProperty("B22", out _));
+            Assert.False(negative.TryGetProperty("C", out _));
+            Assert.True(negative.TryGetProperty("D", out var d));
+            Assert.True(d[0].TryGetProperty("D1", out var d1));
+            Assert.Equal(1, d1.GetInt32());
+
+            Assert.True(positive.TryGetProperty("A", out var a));
+            Assert.Equal(12, a.GetInt32());
+            Assert.False(positive.TryGetProperty("B", out _));
+            Assert.True(positive.TryGetProperty("C", out var c));
+            Assert.Equal("C1", c[0].GetString());
+            Assert.Equal("C2", c[1].GetString());
+            Assert.False(positive.TryGetProperty("D", out _));
+        }
+
+
+        [Fact]
         public void SplitProp_Root_Branch_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
@@ -108,10 +137,36 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
+        public void SplitProp_Root_Branch_Multi_Test()
+        {
+            var source = JsonDocument.Parse(JSON_INDENT);
+            var (positive, negative) = source.RootElement.SplitProp("B21", "B22");
+
+            Write(source, positive, negative);
+
+            Assert.True(negative.TryGetProperty("A", out _));
+            Assert.True(negative.TryGetProperty("B", out var nb));
+            Assert.True(nb.TryGetProperty("B1", out var nb1));
+            Assert.True(nb.TryGetProperty("B2", out var nb2));
+            Assert.True(nb2.ValueKind == JsonValueKind.Null);
+            Assert.True(negative.TryGetProperty("C", out var c));
+
+            Assert.False(positive.TryGetProperty("A", out _));
+            Assert.False(positive.TryGetProperty("B", out _));
+            Assert.True(positive.TryGetProperty("B21", out var pb21));
+            Assert.True(pb21.TryGetProperty("B211", out var pb211));
+            Assert.Equal(211, pb211.GetInt32());
+            Assert.True(positive.TryGetProperty("B22", out var pb22));
+            Assert.Equal(22, pb22.GetInt32());
+            Assert.False(positive.TryGetProperty("C", out _));
+        }
+
+        [Fact]
         public void SplitProp_Recurcive_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var (positive, negative) = source.RootElement.SplitProp("B21", deep: 35);
+            IImmutableSet<string> set = ImmutableHashSet.Create("B21");
+            var (positive, negative) = source.SplitProp(set, deep: 35);
 
             Write(source, positive, negative);
 
@@ -134,7 +189,8 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void SplitProp_Recurcive_Shallow_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var (positive, negative) = source.RootElement.SplitProp("B21", deep: 1);
+            var set = ImmutableHashSet.Create("B21");
+            var (positive, negative) = source.SplitProp(set, deep: 1);
 
             Write(source, positive, negative);
 

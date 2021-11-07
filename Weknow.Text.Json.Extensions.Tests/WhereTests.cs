@@ -81,7 +81,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(d[0].TryGetProperty("D1", out var d1));
             Assert.Equal(1, d1.GetInt32());
             Assert.Equal("D2", d[1].GetString());
-            Assert.Equal(3, d[2].GetInt32());
+            Assert.Equal(2, d.EnumerateArray().Count());
         }
 
         [Fact]
@@ -90,7 +90,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             var source = JsonDocument.Parse(JSON_INDENT);
             var target = source.RootElement.Where(m =>
                                     // remove property with value or raw value elements if > 12
-                                    m.ValueKind != JsonValueKind.Number || m.GetInt32() > 12, 5);
+                                    m.ValueKind != JsonValueKind.Number || m.GetInt32() > 12, 1);
 
             Write(source, target);
 
@@ -104,9 +104,8 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(target.TryGetProperty("C", out _));
             Assert.True(target.TryGetProperty("D", out var d));
             Assert.True(d[0].TryGetProperty("D1", out var d1));
-            Assert.True(d1.ValueKind == JsonValueKind.Null);
             Assert.Equal("D2", d[1].GetString());
-            Assert.Equal(2, d.EnumerateArray().Count());
+            Assert.Equal(3, d[2].GetInt32());
         }
 
         [Fact]
