@@ -508,7 +508,7 @@ namespace System.Text.Json
                 {
                     string curSpine = string.IsNullOrEmpty(spine) ? e.Name : $"{spine}.{e.Name}";
                     bool isEquals = propFilter?.Invoke(e, curSpine) ?? true;
-                    if(propNames != null)
+                    if (propNames != null)
                         isEquals = propNames.Contains(e.Name) || propNames.Contains(curSpine);
                     if (!(isEquals))
                     {
@@ -559,6 +559,134 @@ namespace System.Text.Json
         }
 
         #endregion // WhereImp
+
+        #region Merge
+
+        /// <summary>
+        /// Merge 2 Json
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public static JsonElement Merge(
+            this JsonDocument source,
+            JsonElement element)
+        {
+            return source.RootElement.Merge(element);
+        }
+
+        /// <summary>
+        /// Merge 2 Json
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public static JsonElement Merge(
+            this JsonElement source,
+            JsonElement element)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.Merge(source, element);
+            }
+
+            var reader = new Utf8JsonReader(buffer.WrittenSpan);
+            JsonDocument result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+
+        }
+
+        /// <summary>
+        /// Merge 2 Json
+        /// </summary>
+        /// <param name="writer"></param>
+        /// <param name="source"></param>
+        /// <param name="element"></param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public static void Merge(
+            this Utf8JsonWriter writer,
+            JsonElement source,
+            JsonElement element)
+        {
+            if (source.ValueKind != element.ValueKind)
+                throw new NotSupportedException("Both json must be of same kind");
+            if (source.ValueKind != JsonValueKind.Object && source.ValueKind != JsonValueKind.Array)
+                throw new NotSupportedException("Only json object or array are supported, both source and element should be json object");
+
+            var buffer = new ArrayBufferWriter<byte>();
+            if (source.ValueKind == JsonValueKind.Object)
+            {
+                writer.WriteStartObject();
+
+                foreach (JsonProperty e in source.EnumerateObject())
+                {
+                    JsonElement v = e.Value;
+                    writer.WritePropertyName(e.Name);
+                    v.WriteTo(writer);
+
+                }
+                foreach (JsonProperty e in element.EnumerateObject())
+                {
+                    JsonElement v = e.Value;
+                    writer.WritePropertyName(e.Name);
+                    v.WriteTo(writer);
+
+                }
+                writer.WriteEndObject();
+            }
+            else
+            {
+                writer.WriteStartArray();
+
+                foreach (JsonElement e in source.EnumerateArray())
+                {
+                    e.WriteTo(writer);
+
+                }
+                foreach (JsonElement e in element.EnumerateArray())
+                {
+                    e.WriteTo(writer);
+                }
+                writer.WriteEndArray();
+            }
+        }
+
+
+        #endregion // Merge
+
+        #region MergeIntoProp
+
+        /// <summary>
+        /// Merge 2 Json
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="element"></param>
+        /// <param name="sourceTargetProp">
+        /// The property on the source which the element sould be merged into.
+        /// It can be either property name of property path with '.' separator.
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="NotSupportedException"></exception>
+        public static JsonElement MergeIntoProp(
+            this JsonElement source,
+            JsonElement element,
+            string sourceTargetProp)
+        {
+            var set = ImmutableHashSet.Create(sourceTargetProp);
+            return source.TraverseProps(set, MergeInto);
+
+            void MergeInto(Utf8JsonWriter w, JsonProperty target, string path)
+            {
+                w.WritePropertyName(target.Name);
+                w.Merge(target.Value, element);
+            }
+        }
+
+        #endregion // MergeIntoProp
 
         #region WherePropSetInternal
 
@@ -789,6 +917,130 @@ namespace System.Text.Json
         }
 
         #endregion // SplitPropImp
+
+        #region TraverseProps
+
+        /// <summary>
+        /// TraversePropsProps over a json, will callback when find a property.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="propNames">The property name.</param>
+        /// <param name="action">Action: (writer, current-element, current-path)</param>
+        /// <param name="options"></param>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement TraverseProps(
+            this JsonElement element,
+            IImmutableSet<string> propNames,
+            Action<Utf8JsonWriter, JsonProperty, string> action,
+            TraversePropsOptions? options = default)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                element.TraverseProps(writer, propNames, action, options ?? new TraversePropsOptions(), 0);
+            }
+
+            var reader = new Utf8JsonReader(buffer.WrittenSpan);
+            JsonDocument result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        /// <summary>
+        /// TraversePropsProps over a json, will callback when find a property.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="writer">The positive writer.</param>
+        /// <param name="propNames">The property name.</param>
+        /// <param name="action">Action: (writer, current-element, current-path)</param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <param name="curDeep">The current deep.</param>
+        /// <param name="spine"></param>
+        /// <param name="options"></param>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        private static void TraverseProps(
+            this JsonElement element,
+            Utf8JsonWriter writer,
+            IImmutableSet<string> propNames,
+            Action<Utf8JsonWriter, JsonProperty, string> action,
+            TraversePropsOptions options,
+            byte deep = 0,
+            byte curDeep = 0,
+            string spine = "")
+        {
+            if (deep != 0 && curDeep >= deep)
+            {
+                element.WriteTo(writer); ;
+                return;
+            }
+
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                writer.WriteStartObject();
+
+                foreach (JsonProperty e in element.EnumerateObject())
+                {
+                    string curSpine = string.IsNullOrEmpty(spine) ? e.Name : $"{spine}.{e.Name}";
+                    bool isEquals = propNames.Contains(e.Name) || propNames.Contains(curSpine);
+                    JsonElement v = e.Value;
+                    if (isEquals)
+                    {
+                        action(writer, e, curSpine);
+                        continue;
+                    }
+
+
+                    else if (v.ValueKind == JsonValueKind.Object)
+                    {
+                        WriteRec();
+                    }
+                    else if (v.ValueKind == JsonValueKind.Array)
+                    {
+                        WriteRec();
+                    }
+                    else
+                    {
+                        Write();
+                    }
+
+                    #region Local Methods: Write(), WriteRec()
+
+
+                    void WriteRec()
+                    {
+
+                        writer.WritePropertyName(e.Name);
+
+                        v.TraverseProps(writer, propNames, action, options, deep, (byte)(curDeep + 1), curSpine);
+                    }
+
+                    void Write()
+                    {
+                        writer.WritePropertyName(e.Name);
+                        v.WriteTo(writer);
+                    }
+
+                    #endregion // Local Methods: Write(), WriteRec()
+                }
+                writer.WriteEndObject();
+            }
+            else if (element.ValueKind == JsonValueKind.Array)
+            {
+                writer.WriteStartArray();
+                foreach (JsonElement e in element.EnumerateArray())
+                {
+                    e.TraverseProps(writer, propNames, action, options,
+                                   deep, (byte)(curDeep + 1),
+                                   spine);
+                }
+                writer.WriteEndArray();
+            }
+            else
+            {
+                element.WriteTo(writer);
+            }
+        }
+
+        #endregion // TraverseProps
 
         #region CreateEmptyJsonElement
 
