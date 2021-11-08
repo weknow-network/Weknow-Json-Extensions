@@ -20,6 +20,11 @@ namespace System.Text.Json
     /// </summary>
     public static class JsonIExtensions
     {
+        /// <summary>
+        /// Empty json object
+        /// </summary>
+        public static readonly JsonElement Empty = CreateEmptyJsonElement();
+
         #region AsString
 
         /// <summary>
@@ -130,7 +135,7 @@ namespace System.Text.Json
             options = options ?? SerializerOptions;
             byte[]? j = JsonSerializer.SerializeToUtf8Bytes(instance, options);
             if (j == null)
-                return CreateEmptyJsonElement();
+                return Empty;
             var json = JsonDocument.Parse(j);
             return json.RootElement;
         }
@@ -731,7 +736,7 @@ namespace System.Text.Json
                 var readerPositive = new Utf8JsonReader(bufferWriterPositive.WrittenSpan);
                 positive = JsonDocument.ParseValue(ref readerPositive);
             }
-            return positive?.RootElement ?? CreateEmptyJsonElement();
+            return positive?.RootElement ?? Empty;
         }
 
         #endregion // WherePropSetInternal
@@ -771,7 +776,7 @@ namespace System.Text.Json
                 var readerNegative = new Utf8JsonReader(bufferWriterNegative.WrittenSpan);
                 negative = JsonDocument.ParseValue(ref readerNegative);
             }
-            return new SplitResult(positive?.RootElement ?? CreateEmptyJsonElement(), negative?.RootElement ?? CreateEmptyJsonElement());
+            return new SplitResult(positive?.RootElement ?? Empty, negative?.RootElement ?? Empty);
         }
 
         #endregion // SplitPropInternal
