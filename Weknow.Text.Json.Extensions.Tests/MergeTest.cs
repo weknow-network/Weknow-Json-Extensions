@@ -67,6 +67,13 @@ namespace Weknow.Text.Json.Extensions.Tests
   }
 }
 ";
+
+        private const string JSON3_INDENT =
+@"{
+  ""C"": [1, 2, 3]
+}
+";
+
         private const string JSON_ARR1_INDENT = @"[""A"", ""B"",""C"" ]";
         private const string JSON_ARR2_INDENT = @"[1, 2, 3]";
 
@@ -99,12 +106,59 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(b2.TryGetProperty("B22", out _));
         }
 
+
+        [Fact]
+        public void Merge_MultiObject_Test()
+        {
+            var source = JsonDocument.Parse(JSON1_INDENT).RootElement;
+            var element0 = JsonDocument.Parse(JSON2_INDENT).RootElement;
+            var element1 = JsonDocument.Parse(JSON3_INDENT).RootElement;
+            var merged= source.Merge(element0, element1);
+
+            Write(source, element0, merged);
+
+            Assert.Equal(JsonValueKind.Object, merged.ValueKind);
+            Assert.True(merged.TryGetProperty("A", out _));
+            Assert.True(merged.TryGetProperty("B", out var b));
+            Assert.True(b.TryGetProperty("B1", out _));
+            Assert.True(b.TryGetProperty("B2", out var b2));
+            Assert.True(b2.TryGetProperty("B21", out _));
+            Assert.True(b2.TryGetProperty("B22", out _));
+            Assert.True(merged.TryGetProperty("C", out var c));
+            Assert.Equal(1, c[0].GetInt16());
+            Assert.Equal(2, c[1].GetInt16());
+            Assert.Equal(3, c[2].GetInt16());
+        }
+
+        [Fact]
+        public void Merge_Duplicate_MultiObject_Test()
+        {
+            var element0 = JsonDocument.Parse(JSON2_INDENT).RootElement;
+            var source = JsonDocument.Parse(JSON1_INDENT).RootElement;
+            var element2 = JsonDocument.Parse(JSON3_INDENT).RootElement;
+            var merged= source.Merge(element0, source, element2);
+
+            Write(source, element0, merged);
+
+            Assert.Equal(JsonValueKind.Object, merged.ValueKind);
+            Assert.True(merged.TryGetProperty("A", out _));
+            Assert.True(merged.TryGetProperty("B", out var b));
+            Assert.True(b.TryGetProperty("B1", out _));
+            Assert.True(b.TryGetProperty("B2", out var b2));
+            Assert.True(b2.TryGetProperty("B21", out _));
+            Assert.True(b2.TryGetProperty("B22", out _));
+            Assert.True(merged.TryGetProperty("C", out var c));
+            Assert.Equal(1, c[0].GetInt16());
+            Assert.Equal(2, c[1].GetInt16());
+            Assert.Equal(3, c[2].GetInt16());
+        }
+
         [Fact]
         public void Merge_Into_Object_Test()
         {
             var source = JsonDocument.Parse(JSON2_INDENT).RootElement;
             var element = JsonDocument.Parse(JSON1_INDENT).RootElement;
-            var merged= source.MergeIntoProp(element, "B.B2");
+            var merged= source.MergeIntoProp("B.B2", element);
 
             Write(source, element, merged);
 
@@ -116,6 +170,30 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(b2.TryGetProperty("B21", out _));
             Assert.True(b2.TryGetProperty("B22", out _));
             Assert.True(b2.TryGetProperty("A", out _));
+        }
+
+        [Fact]
+        public void Merge_Into_MultiObject_Test()
+        {
+            var source = JsonDocument.Parse(JSON2_INDENT).RootElement;
+            var element1 = JsonDocument.Parse(JSON1_INDENT).RootElement;
+            var element2 = JsonDocument.Parse(JSON3_INDENT).RootElement;
+            var merged = source.MergeIntoProp("B.B2", element1, element2);
+
+            Write(source, element1, merged);
+
+            Assert.Equal(JsonValueKind.Object, merged.ValueKind);
+            Assert.False(merged.TryGetProperty("A", out _));
+            Assert.True(merged.TryGetProperty("B", out var b));
+            Assert.True(b.TryGetProperty("B1", out _));
+            Assert.True(b.TryGetProperty("B2", out var b2));
+            Assert.True(b2.TryGetProperty("B21", out _));
+            Assert.True(b2.TryGetProperty("B22", out _));
+            Assert.True(b2.TryGetProperty("A", out _));
+            Assert.True(b2.TryGetProperty("C", out var c));
+            Assert.Equal(1, c[0].GetInt16());
+            Assert.Equal(2, c[1].GetInt16());
+            Assert.Equal(3, c[2].GetInt16());
         }
 
         [Fact]

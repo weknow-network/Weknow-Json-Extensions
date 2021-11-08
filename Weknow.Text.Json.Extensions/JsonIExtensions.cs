@@ -563,34 +563,34 @@ namespace System.Text.Json
         #region Merge
 
         /// <summary>
-        /// Merge 2 Json
+        /// Merge Json elements
         /// </summary>
         /// <param name="source"></param>
-        /// <param name="element"></param>
+        /// <param name="elements"></param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
         public static JsonElement Merge(
             this JsonDocument source,
-            JsonElement element)
+            params JsonElement[] elements)
         {
-            return source.RootElement.Merge(element);
+            return source.RootElement.Merge(elements);
         }
 
         /// <summary>
-        /// Merge 2 Json
+        /// Merge Json elements
         /// </summary>
         /// <param name="source"></param>
-        /// <param name="element"></param>
+        /// <param name="elements"></param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
         public static JsonElement Merge(
             this JsonElement source,
-            JsonElement element)
+            params JsonElement[] elements)
         {
             var buffer = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(buffer))
             {
-                writer.Merge(source, element);
+                writer.Merge(source, elements);
             }
 
             var reader = new Utf8JsonReader(buffer.WrittenSpan);
@@ -600,20 +600,18 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Merge 2 Json
+        /// Merge Json elements
         /// </summary>
         /// <param name="writer"></param>
         /// <param name="source"></param>
-        /// <param name="element"></param>
+        /// <param name="elements"></param>
         /// <returns></returns>
         /// <exception cref="NotSupportedException"></exception>
         public static void Merge(
             this Utf8JsonWriter writer,
             JsonElement source,
-            JsonElement element)
+            params JsonElement[] elements)
         {
-            if (source.ValueKind != element.ValueKind)
-                throw new NotSupportedException("Both json must be of same kind");
             if (source.ValueKind != JsonValueKind.Object && source.ValueKind != JsonValueKind.Array)
                 throw new NotSupportedException("Only json object or array are supported, both source and element should be json object");
 
@@ -629,12 +627,22 @@ namespace System.Text.Json
                     v.WriteTo(writer);
 
                 }
-                foreach (JsonProperty e in element.EnumerateObject())
+                foreach (JsonElement element in elements)
                 {
-                    JsonElement v = e.Value;
-                    writer.WritePropertyName(e.Name);
-                    v.WriteTo(writer);
+                    #region Validation
 
+                    if (source.ValueKind != element.ValueKind)
+                        throw new NotSupportedException("Both json must be of same kind");
+
+                    #endregion // Validation
+
+                    foreach (JsonProperty e in element.EnumerateObject())
+                    {
+                        JsonElement v = e.Value;
+                        writer.WritePropertyName(e.Name);
+                        v.WriteTo(writer);
+
+                    }
                 }
                 writer.WriteEndObject();
             }
@@ -647,9 +655,19 @@ namespace System.Text.Json
                     e.WriteTo(writer);
 
                 }
-                foreach (JsonElement e in element.EnumerateArray())
+                foreach (JsonElement element in elements)
                 {
-                    e.WriteTo(writer);
+                    #region Validation
+
+                    if (source.ValueKind != element.ValueKind)
+                        throw new NotSupportedException("Both json must be of same kind");
+
+                    #endregion // Validation
+
+                    foreach (JsonElement e in element.EnumerateArray())
+                    {
+                        e.WriteTo(writer);
+                    }
                 }
                 writer.WriteEndArray();
             }
@@ -661,10 +679,10 @@ namespace System.Text.Json
         #region MergeIntoProp
 
         /// <summary>
-        /// Merge 2 Json
+        /// Merge Json elements
         /// </summary>
         /// <param name="source"></param>
-        /// <param name="element"></param>
+        /// <param name="elements"></param>
         /// <param name="sourceTargetProp">
         /// The property on the source which the element sould be merged into.
         /// It can be either property name of property path with '.' separator.
@@ -673,8 +691,8 @@ namespace System.Text.Json
         /// <exception cref="NotSupportedException"></exception>
         public static JsonElement MergeIntoProp(
             this JsonElement source,
-            JsonElement element,
-            string sourceTargetProp)
+            string sourceTargetProp,
+            params JsonElement[] elements)
         {
             var set = ImmutableHashSet.Create(sourceTargetProp);
             return source.TraverseProps(set, MergeInto);
@@ -682,7 +700,8 @@ namespace System.Text.Json
             void MergeInto(Utf8JsonWriter w, JsonProperty target, string path)
             {
                 w.WritePropertyName(target.Name);
-                w.Merge(target.Value, element);
+
+                w.Merge(target.Value, elements);
             }
         }
 
