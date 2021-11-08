@@ -20,11 +20,18 @@
     <Copyright>Weknow ©</Copyright>
     <Authors>Weknow</Authors>
     <Company>Weknow</Company>
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSource>True</IncludeSource>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageReleaseNotes>Breaking Changes, deep behavior of  Where &amp; WhereProp </PackageReleaseNotes>
+    <PackageReleaseNotes></PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
