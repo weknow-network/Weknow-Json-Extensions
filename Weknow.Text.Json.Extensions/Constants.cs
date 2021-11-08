@@ -50,7 +50,7 @@ namespace Weknow.Text.Json
         public static JsonSerializerOptions SerializerOptions { get; }
 
         /// <summary>
-        /// Gets the serializer options with indent & with standard dictionary convertor .
+        /// Gets the serializer options with indent and with standard dictionary convertor .
         /// </summary>
         public static JsonSerializerOptions SerializerOptionsWithStandardDictionary { get; }
         /// <summary>

@@ -140,12 +140,12 @@ namespace System.Text.Json
         #region WhereProp
 
         /// <summary>
-        /// Where operation, exclude root level properties according to a filter.
+        /// Where operation, exclude properties according to a filter.
         /// </summary>
         /// <param name="doc">The element.</param>
-        /// <param name="filter">
+        /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <param name="onRemove">On remove property notification.</param>
@@ -160,7 +160,7 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                doc.RootElement.WhereImp(writer, filter, null, onRemove, deep);
+                doc.RootElement.WhereImp(writer, filter, null, null, onRemove, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -168,12 +168,12 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Where operation, exclude root level properties according to a filter.
+        /// Where operation, exclude properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
-        /// <param name="filter">
+        /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <param name="onRemove">On remove property notification.</param>
@@ -188,11 +188,93 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                element.WhereImp(writer, filter, null, onRemove, deep);
+                element.WhereImp(writer, filter, null, null, onRemove, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
             return result.RootElement;
+        }
+
+        /// <summary>
+        /// Where operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement WhereProp(
+            this JsonDocument doc,
+            IImmutableSet<string> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
+        {
+            JsonElement result = WherePropSetInternal(doc.RootElement, filter);
+            return result;
+        }
+
+        /// <summary>
+        /// Where operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement WhereProp(
+            this JsonElement element,
+            IImmutableSet<string> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
+        {
+            JsonElement result = WherePropSetInternal(element, filter);
+            return result;
+        }
+
+        /// <summary>
+        /// Where operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement WhereProp(
+            this JsonDocument doc,
+            params string[] filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(doc.RootElement, set);
+            return result;
+        }
+
+        /// <summary>
+        /// Where operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement WhereProp(
+            this JsonElement element,
+            params string[] filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(element, set);
+            return result;
         }
 
         #endregion // WhereProp
@@ -203,9 +285,9 @@ namespace System.Text.Json
         /// Where operation, exclude json parts according to a filter.
         /// </summary>
         /// <param name="doc">The element.</param>
-        /// <param name="filter">
+        /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
@@ -215,7 +297,7 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                doc.RootElement.WhereImp(writer, null, filter, null, deep);
+                doc.RootElement.WhereImp(writer, null, null, filter, null, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -226,9 +308,9 @@ namespace System.Text.Json
         /// Where operation, exclude json parts according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
-        /// <param name="filter">
+        /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
@@ -238,7 +320,7 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                element.WhereImp(writer, null, filter, null, deep);
+                element.WhereImp(writer, null, null, filter, null, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -250,7 +332,7 @@ namespace System.Text.Json
         #region SplitProp
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
@@ -265,7 +347,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
@@ -281,7 +363,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
@@ -296,7 +378,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
@@ -317,7 +399,7 @@ namespace System.Text.Json
 
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name.</param>
@@ -334,7 +416,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name.</param>
@@ -352,7 +434,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propNames">The properties name.</param>
@@ -369,7 +451,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propParentName">The name of the parent property.</param>
@@ -391,22 +473,25 @@ namespace System.Text.Json
         #region WhereImp
 
         /// <summary>
-        /// Where operation, exclude root level properties according to a filter.
+        /// Where operation, exclude properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="writer">The writer.</param>
         /// <param name="propFilter">The property filter.</param>
+        /// <param name="propNames">The property filter.</param>
         /// <param name="elementFilter">The element filter.</param>
         /// <param name="onRemove">On remove property notification.</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <param name="curDeep">The current deep.</param>
+        /// <param name="spine"></param>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         private static void WhereImp(
             this JsonElement element,
             Utf8JsonWriter writer,
-            Func<JsonProperty, string, bool>? propFilter,
-            Func<JsonElement, string, bool>? elementFilter,
-            Action<JsonProperty>? onRemove,
+            Func<JsonProperty, string, bool>? propFilter = null,
+            IImmutableSet<string>? propNames = null,
+            Func<JsonElement, string, bool>? elementFilter = null,
+            Action<JsonProperty>? onRemove = null,
             byte deep = 0,
             byte curDeep = 0,
             string spine = "")
@@ -422,7 +507,10 @@ namespace System.Text.Json
                 foreach (JsonProperty e in element.EnumerateObject())
                 {
                     string curSpine = string.IsNullOrEmpty(spine) ? e.Name : $"{spine}.{e.Name}";
-                    if (!(propFilter?.Invoke(e, curSpine) ?? true))
+                    bool isEquals = propFilter?.Invoke(e, curSpine) ?? true;
+                    if(propNames != null)
+                        isEquals = propNames.Contains(e.Name) || propNames.Contains(curSpine);
+                    if (!(isEquals))
                     {
                         onRemove?.Invoke(e);
                         continue;
@@ -436,18 +524,18 @@ namespace System.Text.Json
                     if (v.ValueKind == JsonValueKind.Object)
                     {
                         writer.WritePropertyName(e.Name);
-                        v.WhereImp(writer, propFilter, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
+                        v.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
                     }
                     else if (v.ValueKind == JsonValueKind.Array)
                     {
                         writer.WritePropertyName(e.Name);
-                        v.WhereImp(writer, propFilter, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
+                        v.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
                     }
                     else
                     {
                         if (elementFilter?.Invoke(v, curSpine) ?? true)
                             e.WriteTo(writer);
-                        else if (propFilter == null)
+                        else if (propFilter == null && propNames == null)
                             writer.WriteNull(e.Name);
                     }
                 }
@@ -459,7 +547,7 @@ namespace System.Text.Json
                 foreach (JsonElement e in element.EnumerateArray())
                 {
                     if (elementFilter?.Invoke(e, spine) ?? true)
-                        e.WhereImp(writer, propFilter, elementFilter, onRemove, deep, (byte)(curDeep + 1), spine);
+                        e.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), spine);
                 }
                 writer.WriteEndArray();
             }
@@ -472,10 +560,39 @@ namespace System.Text.Json
 
         #endregion // WhereImp
 
+        #region WherePropSetInternal
+
+        /// <summary>
+        /// Where operation, find properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="propNames">The properties name.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        internal static JsonElement WherePropSetInternal(
+            JsonElement element,
+            IImmutableSet<string> propNames)
+        {
+            var bufferWriterPositive = new ArrayBufferWriter<byte>();
+            using (var writerPositive = new Utf8JsonWriter(bufferWriterPositive))
+            {
+                element.SplitPropImp(writerPositive, null, propNames);
+            }
+            JsonDocument? positive = null;
+            if (bufferWriterPositive.WrittenSpan.Length > 0)
+            {
+                var readerPositive = new Utf8JsonReader(bufferWriterPositive.WrittenSpan);
+                positive = JsonDocument.ParseValue(ref readerPositive);
+            }
+            return positive?.RootElement ?? CreateEmptyJsonElement();
+        }
+
+        #endregion // WherePropSetInternal
+
         #region SplitPropInternal
 
         /// <summary>
-        /// Split operation, split root level properties according to a filter.
+        /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propNames">The properties name.</param>
@@ -515,17 +632,17 @@ namespace System.Text.Json
         #region SplitPropImp
 
         /// <summary>
-        /// Split operation, exclude root level properties according to a filter.
+        /// Split operation, exclude properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="positiveWriter">The positive writer.</param>
         /// <param name="negativeWriter">The negative writer.</param>
         /// <param name="propNames">The property name.</param>
         /// <param name="propParentName">The names of the parent property.</param>
-        /// <param name="onRemove">On remove property notification.</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <param name="curDeep">The current deep.</param>
         /// <param name="isParentEquals"></param>
+        /// <param name="spine"></param>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         private static void SplitPropImp(
             this JsonElement element,
@@ -555,8 +672,8 @@ namespace System.Text.Json
 
                 foreach (JsonProperty e in element.EnumerateObject())
                 {
-                    string curSpine = string.IsNullOrEmpty(spine) ? e.Name : $"{spine}.{e.Name}";
                     JsonElement v = e.Value;
+                    string curSpine = string.IsNullOrEmpty(spine) ? e.Name : $"{spine}.{e.Name}";
                     bool isEquals = propNames.Contains(e.Name) || propNames.Contains(curSpine);
                     if (!hasParent)
                     {

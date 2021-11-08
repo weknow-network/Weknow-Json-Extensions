@@ -108,7 +108,7 @@ namespace System.Text.Json
             #region Ctor
 
             /// <summary>
-            /// Initializes a new instance of the <see cref="ConvertStrategyX{TKey, TValue}"/> class.
+            /// <![CDATA[Initializes a new instance of the <see cref="ConvertStrategyX{TKey, TValue}"/> class.]]>
             /// </summary>
             /// <param name="options">The options.</param>
             public ConvertStrategy(JsonSerializerOptions options)
@@ -129,7 +129,7 @@ namespace System.Text.Json
             #region Read
 
             /// <summary>
-            /// Reads and converts the JSON to type <typeparamref name="T" />.
+            /// Reads and converts the JSON to type.
             /// </summary>
             /// <param name="reader">The reader.</param>
             /// <param name="typeToConvert">The type to convert.</param>

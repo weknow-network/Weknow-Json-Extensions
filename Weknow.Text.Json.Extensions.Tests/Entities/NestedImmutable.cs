@@ -9,7 +9,7 @@ namespace Weknow.Text.Json.Extensions.Tests
     public class NestedImmutable : IEquatable<NestedImmutable>
     {
         public int Id { get; set; }
-        public ImmutableDictionary<string, ConsoleColor> Map { get; set; }
+        public ImmutableDictionary<string, ConsoleColor> Map { get; set; } = ImmutableDictionary<string, ConsoleColor>.Empty;
 
         public override bool Equals(object obj)
         {

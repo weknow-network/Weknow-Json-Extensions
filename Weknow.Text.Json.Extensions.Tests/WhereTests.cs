@@ -109,6 +109,41 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
+        public void WhereProp_Root_Simple_Test()
+        {
+            var source = JsonDocument.Parse(JSON_INDENT);
+            var target = source.RootElement.WhereProp("A", "B", "D");
+
+            Write(source, target);
+
+            Assert.True(target.TryGetProperty("A", out _));
+            Assert.True(target.TryGetProperty("B", out var b));
+            Assert.True(b.TryGetProperty("B1", out _));
+            Assert.True(b.TryGetProperty("B2", out var b2));
+            Assert.True(b2.TryGetProperty("B21", out _));
+            Assert.True(b2.TryGetProperty("B22", out _));
+            Assert.False(target.TryGetProperty("C", out _));
+            Assert.True(target.TryGetProperty("D", out var d));
+            Assert.True(d[0].TryGetProperty("D1", out var d1));
+            Assert.Equal(1, d1.GetInt32());
+        }
+
+        [Fact]
+        public void WhereProp_Root_Branch_Simple_Test()
+        {
+            var source = JsonDocument.Parse(JSON_INDENT);
+            var target = source.RootElement.WhereProp("A", "C", "D");
+
+            Write(source, target);
+
+            Assert.True(target.TryGetProperty("A", out _));
+            Assert.False(target.TryGetProperty("B", out _));
+            Assert.True(target.TryGetProperty("C", out var c));
+            Assert.Equal("C1", c[0].GetString());
+            Assert.Equal("C2", c[1].GetString());
+        }
+
+        [Fact]
         public void WhereProp_Root_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
