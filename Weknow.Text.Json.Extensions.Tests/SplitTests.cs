@@ -202,7 +202,8 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(b2.TryGetProperty("B22", out _));
             Assert.True(negative.TryGetProperty("C", out _));
 
-            Assert.Equal(JsonValueKind.Undefined, positive.ValueKind);
+            Assert.Equal(JsonValueKind.Object, positive.ValueKind);
+            Assert.Empty( positive.EnumerateObject());
         }
     }
 }

@@ -1067,7 +1067,19 @@ namespace System.Text.Json
         /// Create Empty Json Element
         /// </summary>
         /// <returns></returns>
-        private static JsonElement CreateEmptyJsonElement() => new JsonElement();
+        private static JsonElement CreateEmptyJsonElement()
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartObject();
+                writer.WriteEndObject();
+            }
+
+            var reader = new Utf8JsonReader(buffer.WrittenSpan);
+            JsonDocument result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
 
         #endregion // CreateEmptyJsonElement
     }
