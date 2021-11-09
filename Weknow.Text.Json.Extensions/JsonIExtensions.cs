@@ -950,8 +950,24 @@ namespace System.Text.Json
         /// <param name="element">The element.</param>
         /// <param name="propNames">The property name.</param>
         /// <param name="action">Action: (writer, current-element, current-path)</param>
+        /// <exception cref="System.NotSupportedException">Only 'Object' or 'Array' element are supported</exception>
+        public static JsonElement TraverseProps(
+            this JsonElement element,
+            Action<Utf8JsonWriter, JsonProperty, string> action,
+            params string[] propNames)
+        {
+            var set = ImmutableHashSet.CreateRange(propNames);
+            return TraverseProps(element, set, action);
+        }
+
+        /// <summary>
+        /// TraversePropsProps over a json, will callback when find a property.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="propNames">The property name.</param>
+        /// <param name="action">Action: (writer, current-element, current-path)</param>
         /// <param name="options"></param>
-        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        /// <exception cref="System.NotSupportedException">Only 'Object' or 'Array' element are supported</exception>
         public static JsonElement TraverseProps(
             this JsonElement element,
             IImmutableSet<string> propNames,
@@ -980,7 +996,7 @@ namespace System.Text.Json
         /// <param name="curDeep">The current deep.</param>
         /// <param name="spine"></param>
         /// <param name="options"></param>
-        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        /// <exception cref="System.NotSupportedException">Only 'Object' or 'Array' element are supported</exception>
         private static void TraverseProps(
             this JsonElement element,
             Utf8JsonWriter writer,
