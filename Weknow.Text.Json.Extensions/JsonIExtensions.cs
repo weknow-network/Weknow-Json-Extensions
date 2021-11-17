@@ -436,6 +436,23 @@ namespace System.Text.Json
             return SplitPropInternal(element, propNames, null, deep);
         }
 
+        /// <summary>
+        /// Split operation, split properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static SplitResult SplitProp(
+            this JsonElement element,
+            IEnumerable<string> propNames,
+            byte deep = 0)
+        {
+            var set = ImmutableHashSet.CreateRange(propNames);
+            return SplitPropInternal(element, set, null, deep);
+        }
+
         #endregion // SplitProp
 
         #region SplitChidProp
@@ -509,6 +526,25 @@ namespace System.Text.Json
             byte deep = 0)
         {
             return SplitPropInternal(element, propNames, propParentName, deep);
+        }
+
+        /// <summary>
+        /// Split operation, split properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="propParentName">The name of the parent property.</param>
+        /// <param name="propNames">The properties name.</param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static SplitResult SplitChidProp(
+            this JsonElement element,
+            string propParentName,
+            IEnumerable<string> propNames,
+            byte deep = 0)
+        {
+            var set = ImmutableHashSet.CreateRange(propNames);
+            return SplitPropInternal(element, set, propParentName, deep);
         }
 
         #endregion // SplitChidProp
