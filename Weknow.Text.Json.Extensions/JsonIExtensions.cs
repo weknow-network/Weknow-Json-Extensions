@@ -282,6 +282,44 @@ namespace System.Text.Json
             return result;
         }
 
+        /// <summary>
+        /// Where operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement WhereProp(
+            this JsonDocument doc,
+            IEnumerable<string> filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(doc.RootElement, set);
+            return result;
+        }
+
+        /// <summary>
+        /// Where operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement WhereProp(
+            this JsonElement element,
+            IEnumerable<string> filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(element, set);
+            return result;
+        }
+
         #endregion // WhereProp
 
         #region Where
