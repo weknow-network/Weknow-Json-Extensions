@@ -1,61 +1,40 @@
-name: .NET Build & Publish NuGet V2
+name: Build & Deploy NuGet
+
+# doc: https://docs.github.com/en/actions
+# variables: https://docs.github.com/en/actions/learn-github-actions/environment-variables
+# secrets: https://docs.github.com/en/actions/learn-github-actions/workflow-syntax-for-github-actions#example-17
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]
   pull_request:
-    branches: [master]
+    branches: [ master ]
   workflow_dispatch:
     inputs:
       logLevel:
-        description: "Log level"
+        description: 'Log level'     
         required: false
-        default: "warning"
-
+        default: 'warning'
+    
 env: # https://docs.github.com/en/actions/learn-github-actions/environment-variables
   BUILD_CONFIG: Release
-  DOTNET_VER: 5.0.x
+  DOTNET_VER: 6.0.x
   INCLUDE_PRERELEASE: false
-  # DOTNET_VER: 6.0.x
-  # INCLUDE_PRERELEASE: true
-
+  
 jobs:
-  build:
-    name: build
-    runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: ${{ env.DOTNET_VER }}
-          include-prerelease: ${{ env.INCLUDE_PRERELEASE }}
-          
-      - name: Increment Version
-        run: |
-          perl -pi -e 's/([0-9]+)\.([0-9]+)\.([0-9]+)/"$1.$2.${\( $3+1 )}"/eg' Directory.Build.props
-        shell: bash
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          author_name: CI/CD
-          author_email: ${{ inputs.author-email }}
-          message: "Increment Version"
-          add: "Directory.Build.props"
+  version_increment:
+    uses: weknow-network/weknow-workflows/.github/workflows/dotnet-increment-version.yml@main
+    needs: [validate-repo-prefix]
+      
+  build-nuget:
+    uses: weknow-network/weknow-workflows/.github/workflows/dotnet-build-deploy-local-nuget.yml@main
+    needs: [version_increment]
+    secrets:
+      NUGET_PUBLISH: ${{ secrets.NUGET_PUBLISH }}
+    with:
+      build-config: Release
+      dotnet-version: 6.0.x
+      include-prerelease: false
 
-      - name: Restore dependencies
-        run: dotnet restore /property:Configuration=${{ env.BUILD_CONFIG }}
 
-      - name: Build
-        run: dotnet build --configuration ${{ env.BUILD_CONFIG }} --no-restore -o out
-
-      - name: Test
-        run: dotnet test --configuration ${{ env.BUILD_CONFIG }} --no-restore --no-build --verbosity normal -o out
-
-      - name: Push generated package
-        run: dotnet nuget push ./**/out/*.nupkg -k ${{ secrets.NUGET_PUBLISH }} -s https://api.nuget.org/v3/index.json --skip-duplicate 
-  #   - uses: actions/checkout@master
-  #   - uses: codecov/codecov-action@v2
-  #     with:
-  #       fail_ci_if_error: true # optional (default = false)
