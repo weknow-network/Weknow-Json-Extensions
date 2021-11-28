@@ -32,8 +32,8 @@ jobs:
     secrets:
       NUGET_PUBLISH: ${{ secrets.NUGET_PUBLISH }}
     with:
-      build-config: Release
-      dotnet-version: 6.0.x
-      include-prerelease: false
+      build-config: ${{ env.BUILD_CONFIG }}
+      dotnet-version: ${{ env.DOTNET_VER }}
+      include-prerelease: ${{ env.INCLUDE_PRERELEASE }}
 
 
