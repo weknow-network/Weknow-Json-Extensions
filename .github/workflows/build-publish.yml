@@ -27,7 +27,7 @@ jobs:
     uses: weknow-network/weknow-workflows/.github/workflows/dotnet-increment-version.yml@main
       
   build-nuget:
-    uses: weknow-network/weknow-workflows/.github/workflows/dotnet-build-deploy-local-nuget.yml@main
+    uses: weknow-network/weknow-workflows/.github/workflows/dotnet-build-deploy-public-nuget.yml@main
     needs: [version_increment]
     secrets:
       NUGET_PUBLISH: ${{ secrets.NUGET_PUBLISH }}
