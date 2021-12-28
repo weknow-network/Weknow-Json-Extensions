@@ -16,7 +16,7 @@ using static Weknow.Text.Json.Constants;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {
-    public class MergeTest
+    public class MergeTests
     {
         private static readonly JsonWriterOptions OPT_INDENT =
                         new JsonWriterOptions { Indented = true };
@@ -25,7 +25,7 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #region Ctor
 
-        public MergeTest(ITestOutputHelper outputHelper)
+        public MergeTests(ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
         }

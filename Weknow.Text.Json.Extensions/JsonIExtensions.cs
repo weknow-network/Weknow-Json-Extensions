@@ -156,6 +156,7 @@ namespace System.Text.Json
         /// <param name="onRemove">On remove property notification.</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonDocument WhereProp(
             this JsonDocument doc,
             Func<JsonProperty, string, bool> filter,
@@ -165,7 +166,7 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                doc.RootElement.WhereImp(writer, filter, null, null, onRemove, deep);
+                doc.RootElement.ExcludeImp(writer, filter, null, null, onRemove, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -184,6 +185,7 @@ namespace System.Text.Json
         /// <param name="onRemove">On remove property notification.</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonElement WhereProp(
             this JsonElement element,
             Func<JsonProperty, string, bool> filter,
@@ -193,7 +195,7 @@ namespace System.Text.Json
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                element.WhereImp(writer, filter, null, null, onRemove, deep);
+                element.ExcludeImp(writer, filter, null, null, onRemove, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -212,6 +214,7 @@ namespace System.Text.Json
         /// <param name="onRemove">On remove property notification.</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonElement WhereProp(
             this JsonDocument doc,
             IImmutableSet<string> filter,
@@ -234,6 +237,7 @@ namespace System.Text.Json
         /// <param name="onRemove">On remove property notification.</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonElement WhereProp(
             this JsonElement element,
             IImmutableSet<string> filter,
@@ -254,6 +258,7 @@ namespace System.Text.Json
         /// </param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonElement WhereProp(
             this JsonDocument doc,
             params string[] filter)
@@ -273,6 +278,7 @@ namespace System.Text.Json
         /// </param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonElement WhereProp(
             this JsonElement element,
             params string[] filter)
@@ -292,6 +298,7 @@ namespace System.Text.Json
         /// </param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonElement WhereProp(
             this JsonDocument doc,
             IEnumerable<string> filter)
@@ -311,6 +318,7 @@ namespace System.Text.Json
         /// </param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use ExcludeProp", false)]
         public static JsonElement WhereProp(
             this JsonElement element,
             IEnumerable<string> filter)
@@ -335,12 +343,13 @@ namespace System.Text.Json
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use Exclude", false)]
         public static JsonDocument Where(this JsonDocument doc, Func<JsonElement, string, bool> filter, byte deep = 0)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                doc.RootElement.WhereImp(writer, null, null, filter, null, deep);
+                doc.RootElement.ExcludeImp(writer, null, null, filter, null, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -358,12 +367,13 @@ namespace System.Text.Json
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use Exclude", false)]
         public static JsonElement Where(this JsonElement element, Func<JsonElement, string, bool> filter, byte deep = 0)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                element.WhereImp(writer, null, null, filter, null, deep);
+                element.ExcludeImp(writer, null, null, filter, null, deep);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -371,6 +381,236 @@ namespace System.Text.Json
         }
 
         #endregion // Where
+
+        #region ExcludeProp
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonDocument ExcludeProp(
+            this JsonDocument doc,
+            Func<JsonProperty, string, bool> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                doc.RootElement.ExcludeImp(writer, filter, null, null, onRemove, deep);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement ExcludeProp(
+            this JsonElement element,
+            Func<JsonProperty, string, bool> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                element.ExcludeImp(writer, filter, null, null, onRemove, deep);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement ExcludeProp(
+            this JsonDocument doc,
+            IImmutableSet<string> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
+        {
+            JsonElement result = WherePropSetInternal(doc.RootElement, filter);
+            return result;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <param name="onRemove">On remove property notification.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement ExcludeProp(
+            this JsonElement element,
+            IImmutableSet<string> filter,
+            byte deep = 0,
+            Action<JsonProperty>? onRemove = null)
+        {
+            JsonElement result = WherePropSetInternal(element, filter);
+            return result;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement ExcludeProp(
+            this JsonDocument doc,
+            params string[] filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(doc.RootElement, set);
+            return result;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement ExcludeProp(
+            this JsonElement element,
+            params string[] filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(element, set);
+            return result;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement ExcludeProp(
+            this JsonDocument doc,
+            IEnumerable<string> filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(doc.RootElement, set);
+            return result;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement ExcludeProp(
+            this JsonElement element,
+            IEnumerable<string> filter)
+        {
+            IImmutableSet<string> set = ImmutableHashSet.CreateRange(filter);
+            JsonElement result = WherePropSetInternal(element, set);
+            return result;
+        }
+
+        #endregion // ExcludeProp
+
+        #region Exclude
+
+        /// <summary>
+        /// Exclude operation, exclude json parts according to a filter.
+        /// </summary>
+        /// <param name="doc">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonDocument Exclude(this JsonDocument doc, Func<JsonElement, string, bool> filter, byte deep = 0)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                doc.RootElement.ExcludeImp(writer, null, null, filter, null, deep);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result;
+        }
+
+        /// <summary>
+        /// Exclude operation, exclude json parts according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="filter"><![CDATA[
+        /// The filter which determine whether to keep the property. 
+        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
+        /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static JsonElement Exclude(this JsonElement element, Func<JsonElement, string, bool> filter, byte deep = 0)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                element.ExcludeImp(writer, null, null, filter, null, deep);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        #endregion // Exclude
 
         #region SplitProp
 
@@ -549,7 +789,7 @@ namespace System.Text.Json
 
         #endregion // SplitChidProp
 
-        #region WhereImp
+        #region ExcludeImp
 
         /// <summary>
         /// Where operation, exclude properties according to a filter.
@@ -564,7 +804,7 @@ namespace System.Text.Json
         /// <param name="curDeep">The current deep.</param>
         /// <param name="spine"></param>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
-        private static void WhereImp(
+        private static void ExcludeImp(
             this JsonElement element,
             Utf8JsonWriter writer,
             Func<JsonProperty, string, bool>? propFilter = null,
@@ -603,12 +843,12 @@ namespace System.Text.Json
                     if (v.ValueKind == JsonValueKind.Object)
                     {
                         writer.WritePropertyName(e.Name);
-                        v.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
+                        v.ExcludeImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
                     }
                     else if (v.ValueKind == JsonValueKind.Array)
                     {
                         writer.WritePropertyName(e.Name);
-                        v.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
+                        v.ExcludeImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
                     }
                     else
                     {
@@ -626,7 +866,7 @@ namespace System.Text.Json
                 foreach (JsonElement e in element.EnumerateArray())
                 {
                     if (elementFilter?.Invoke(e, spine) ?? true)
-                        e.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), spine);
+                        e.ExcludeImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), spine);
                 }
                 writer.WriteEndArray();
             }
@@ -637,7 +877,7 @@ namespace System.Text.Json
             }
         }
 
-        #endregion // WhereImp
+        #endregion // ExcludeImp
 
         #region Merge
 
@@ -1177,5 +1417,32 @@ namespace System.Text.Json
         }
 
         #endregion // CreateEmptyJsonElement
+
+        #region IntoProp
+
+        /// <summary>
+        /// Wrap Into a property of empty element.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="propName">Name of the property.</param>
+        /// <returns></returns>
+        public static JsonElement IntoProp(this JsonElement source, string propName)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartObject();
+                writer.WritePropertyName(propName);
+                source.WriteTo(writer);
+                writer.WriteEndObject();
+            }
+
+            var reader = new Utf8JsonReader(buffer.WrittenSpan);
+            JsonDocument result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        #endregion // IntoProp
+
     }
 }

@@ -13,6 +13,11 @@ namespace Weknow.Text.Json
     {
         private static readonly JsonStringEnumConverter EnumConvertor = new JsonStringEnumConverter(JsonNamingPolicy.CamelCase);
 
+        #region Ctor
+
+        /// <summary>
+        /// Initializes the <see cref="Constants"/> class.
+        /// </summary>
         static Constants()
         {
             SerializerOptions = new JsonSerializerOptions
@@ -43,6 +48,8 @@ namespace Weknow.Text.Json
                 Converters = { EnumConvertor }
             };
         }
+
+        #endregion // Ctor
 
         /// <summary>
         /// Gets the serializer options with indent.

@@ -16,7 +16,7 @@ using static Weknow.Text.Json.Constants;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {
-    public class WhereTests
+    public class ExcludeTests
     {
         private static readonly JsonWriterOptions OPT_INDENT =
                         new JsonWriterOptions { Indented = true };
@@ -26,7 +26,7 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #region Ctor
 
-        public WhereTests(ITestOutputHelper outputHelper)
+        public ExcludeTests(ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
         }
@@ -60,10 +60,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void Where_Root_Test()
+        public void Exclude_Root_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.Where((e, _) =>
+            var target = source.RootElement.Exclude((e, _) =>
                                     // remove property with value or raw value elements if > 12
                                     e.ValueKind != JsonValueKind.Number || e.GetInt32() > 12);
 
@@ -85,10 +85,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void Where_Deep_Test()
+        public void Exclude_Deep_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.Where((e, _) =>
+            var target = source.RootElement.Exclude((e, _) =>
                                     // remove property with value or raw value elements if > 12
                                     e.ValueKind != JsonValueKind.Number || e.GetInt32() > 12, 1);
 
@@ -109,10 +109,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void WhereProp_Root_Simple_Test()
+        public void ExcludeProp_Root_Simple_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp("A", "B", "D");
+            var target = source.RootElement.ExcludeProp("A", "B", "D");
 
             Write(source, target);
 
@@ -129,10 +129,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void WhereProp_Root_Branch_Simple_Test()
+        public void ExcludeProp_Root_Branch_Simple_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp("A", "C", "D");
+            var target = source.RootElement.ExcludeProp("A", "C", "D");
 
             Write(source, target);
 
@@ -144,10 +144,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void WhereProp_Root_Test()
+        public void ExcludeProp_Root_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e, _) => e.Name != "C", onRemove: _fakeOnRemove);
+            var target = source.RootElement.ExcludeProp((e, _) => e.Name != "C", onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -168,10 +168,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void WhereProp_Root_Branch_Test()
+        public void ExcludeProp_Root_Branch_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e,_) => e.Name != "B", onRemove: _fakeOnRemove);
+            var target = source.RootElement.ExcludeProp((e,_) => e.Name != "B", onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -187,10 +187,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void WhereProp_Recurcive_Test()
+        public void ExcludeProp_Recurcive_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e, _) => e.Name != "B21", 35, onRemove: _fakeOnRemove);
+            var target = source.RootElement.ExcludeProp((e, _) => e.Name != "B21", 35, onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -208,10 +208,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void WhereProp_Path_Test()
+        public void ExcludeProp_Path_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((_, path) => path != "B.B2.B21", 35, onRemove: _fakeOnRemove);
+            var target = source.RootElement.ExcludeProp((_, path) => path != "B.B2.B21", 35, onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -229,10 +229,10 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void WhereProp_Recurcive_Shallow_Test()
+        public void ExcludeProp_Recurcive_Shallow_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e, _) => e.Name != "B21", 1, onRemove: _fakeOnRemove);
+            var target = source.RootElement.ExcludeProp((e, _) => e.Name != "B21", 1, onRemove: _fakeOnRemove);
 
             Write(source, target);
 
