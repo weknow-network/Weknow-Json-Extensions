@@ -18,12 +18,13 @@ namespace System.Text.Json
     /// <summary>
     /// Json extensions
     /// </summary>
-    public static class JsonIExtensions
+    public static class JsonExtensions
     {
         /// <summary>
         /// Empty json object
         /// </summary>
         public static readonly JsonElement Empty = CreateEmptyJsonElement();
+        private static JsonWriterOptions INDENTED_JSON_OPTIONS = new JsonWriterOptions {  Indented = true };
 
         #region AsString
 
@@ -54,6 +55,36 @@ namespace System.Text.Json
                 return String.Empty;
             using var ms = new MemoryStream();
             using (var w = new Utf8JsonWriter(ms, options))
+            {
+                json.WriteTo(w);
+            }
+            var result = Encoding.UTF8.GetString(ms.ToArray());
+            return result;
+        }
+
+        /// <summary>
+        /// Gets the json representation as indented string.
+        /// </summary>
+        /// <param name="json">The j.</param>
+        /// <returns></returns>
+        public static string AsIndentString(
+            this JsonDocument json)
+        {
+            return json.RootElement.AsString(INDENTED_JSON_OPTIONS);
+        }
+
+        /// <summary>
+        /// Gets the json representation as indented string.
+        /// </summary>
+        /// <param name="json">The j.</param>
+        /// <returns></returns>
+        public static string AsIndentString(
+            this JsonElement json)
+        {
+            if (json.ValueKind == JsonValueKind.Undefined)
+                return String.Empty;
+            using var ms = new MemoryStream();
+            using (var w = new Utf8JsonWriter(ms, INDENTED_JSON_OPTIONS))
             {
                 json.WriteTo(w);
             }
