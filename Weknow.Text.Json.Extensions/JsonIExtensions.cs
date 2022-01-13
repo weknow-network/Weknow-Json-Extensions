@@ -26,6 +26,57 @@ namespace System.Text.Json
         public static readonly JsonElement Empty = CreateEmptyJsonElement();
         private static JsonWriterOptions INDENTED_JSON_OPTIONS = new JsonWriterOptions {  Indented = true };
 
+        #region TryGetProperty
+
+        /// <summary>
+        /// Looks for a property named propertyName in the current object, returning a value
+        /// that indicates whether or not such a property exists. When the property exists,
+        /// its value is assigned to the value argument.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="value">When this method returns, contains the value of the specified property.</param>
+        /// <param name="path">The name's path of the property to find.</param>
+        /// <returns></returns>
+        public static bool TryGetProperty(this JsonDocument source, out JsonElement value, params string[] path)
+        {
+            return source.RootElement.TryGetProperty(out value, path);
+        }
+        
+
+        /// <summary>
+        /// Looks for a property named propertyName in the current object, returning a value
+        /// that indicates whether or not such a property exists. When the property exists,
+        /// its value is assigned to the value argument.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="value">When this method returns, contains the value of the specified property.</param>
+        /// <param name="path">The name's path of the property to find.</param>
+        /// <returns></returns>
+        public static bool TryGetProperty(this JsonElement source, out JsonElement value, params string[] path)
+        {
+            #region Validation
+
+            if (path == null || path.Length  == 0) 
+            {
+                value = default;
+                return false;
+            }
+
+            #endregion // Validation
+
+            value = source;
+            Span<string> cur = path.AsSpan();
+            while (cur.Length != 0)
+            {
+                var head = cur[0];
+                if(!value.TryGetProperty(head, out value)) return false;
+                cur = cur[1..];
+            }
+            return true;
+        }
+
+        #endregion // TryGetProperty
+
         #region AsString
 
         /// <summary>
