@@ -15,6 +15,31 @@ using static Weknow.Text.Json.Constants;
 namespace System.Text.Json
 {
 
+    // Determine the traversing flow
+    public enum TraverseFlow
+    {
+        /// <summary>
+        /// Skip and continue the parent flow.
+        /// </summary>
+        BackToParent,
+        /// <summary>
+        /// Continue to sibling or ancestor's sibling (not children).
+        /// </summary>
+        Continue,
+        /// <summary>
+        /// Stop traversing
+        /// </summary>
+        Break,
+        /// <summary>
+        /// Drill into children and continue to sibling or ancestor's sibling.
+        /// </summary>
+        Drill,
+        /// <summary>
+        /// Drill into children and then break (don't continue to sibling or ancestor's sibling).
+        /// </summary>
+        DrillAndBreak
+    }
+
     /// <summary>
     /// Json extensions
     /// </summary>
@@ -24,7 +49,7 @@ namespace System.Text.Json
         /// Empty json object
         /// </summary>
         public static readonly JsonElement Empty = CreateEmptyJsonElement();
-        private static JsonWriterOptions INDENTED_JSON_OPTIONS = new JsonWriterOptions {  Indented = true };
+        private static JsonWriterOptions INDENTED_JSON_OPTIONS = new JsonWriterOptions { Indented = true };
 
         #region TryGetProperty
 
@@ -41,7 +66,7 @@ namespace System.Text.Json
         {
             return source.RootElement.TryGetProperty(out value, path);
         }
-        
+
 
         /// <summary>
         /// Looks for a property named propertyName in the current object, returning a value
@@ -56,7 +81,7 @@ namespace System.Text.Json
         {
             #region Validation
 
-            if (path == null || path.Length  == 0) 
+            if (path == null || path.Length == 0)
             {
                 value = default;
                 return false;
@@ -69,13 +94,114 @@ namespace System.Text.Json
             while (cur.Length != 0)
             {
                 var head = cur[0];
-                if(!value.TryGetProperty(head, out value)) return false;
+                if (!value.TryGetProperty(head, out value)) return false;
                 cur = cur[1..];
             }
             return true;
         }
 
         #endregion // TryGetProperty
+
+        #region DeepFilter
+
+        /// <summary>
+        /// Filters descendant element by predicate.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="predicate">
+        /// The predicate: (current, deep, breadcrumbs spine) =&gt; (should yield, flow strategy).
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// </param>
+        /// <returns></returns>
+        public static IEnumerable<JsonElement> DeepFilter(this JsonDocument source, Func<JsonElement, int, IImmutableList<string>, (bool shpuldYield, TraverseFlow flowStrategy)> predicate)
+        {
+            return source.RootElement.DeepFilter(0, ImmutableList<string>.Empty, predicate);
+        }
+
+        /// <summary>
+        /// Filters descendant element by predicate.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="predicate">
+        /// The predicate: (current, deep, breadcrumbs spine) =&gt; (should yield, flow strategy).
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// </param>
+        /// <returns></returns>
+        public static IEnumerable<JsonElement> DeepFilter(this JsonElement source, Func<JsonElement, int, IImmutableList<string>, (bool shpuldYield, TraverseFlow flowStrategy)> predicate)
+        {
+            return source.DeepFilter(0, ImmutableList<string>.Empty, predicate);
+        }
+
+        /// <summary>
+        /// Filters descendant element by predicate.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="deep">The deep.</param>
+        /// <param name="spine">The breadcrumbs spine.</param>
+        /// <param name="predicate">The predicate: (current, deep, breadcrumbs spine) =&gt; (should yield, flow strategy).
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.</param>
+        /// <returns></returns>
+        private static IEnumerable<JsonElement> DeepFilter(
+                                this JsonElement source,
+                                int deep,
+                                IImmutableList<string> spine,
+                                Func<JsonElement, int, IImmutableList<string>, (bool shpuldYield, TraverseFlow flowStrategy)> predicate)
+        {
+            if (source.ValueKind == JsonValueKind.Object)
+            {
+                foreach (JsonProperty p in source.EnumerateObject())
+                {
+                    var spn = spine.Add(p.Name);
+                    var val = p.Value;
+                    var (shouldYield, flowStrategy) = predicate(val, deep, spn);
+                    if (shouldYield) yield return val;
+                    if (flowStrategy == TraverseFlow.Break)
+                        yield break;
+                    if (flowStrategy == TraverseFlow.Drill ||
+                        flowStrategy == TraverseFlow.DrillAndBreak)
+                    {
+                        foreach (var result in val.DeepFilter(deep + 1, spn, predicate))
+                        {
+                            yield return result;
+                        }
+                        if (flowStrategy == TraverseFlow.BackToParent)
+                            break;
+                        if (flowStrategy == TraverseFlow.DrillAndBreak)
+                            yield break;
+                    }
+                }
+            }
+            else if (source.ValueKind == JsonValueKind.Array)
+            {
+                int i = 0;
+                foreach (JsonElement val in source.EnumerateArray())
+                {
+                    var spn = spine.Add((i++).ToString());
+                    var (shouldYield, flowStrategy) = predicate(val, deep, spn);
+                    if (shouldYield) yield return val;
+                    if (flowStrategy == TraverseFlow.Break)
+                        yield break;
+                    if (flowStrategy == TraverseFlow.Drill ||
+                        flowStrategy == TraverseFlow.DrillAndBreak)
+                    {
+                        foreach (var result in val.DeepFilter(deep + 1, spn, predicate))
+                        {
+                            yield return result;
+                        }
+                        if (flowStrategy == TraverseFlow.BackToParent)
+                            break;
+                        if (flowStrategy == TraverseFlow.DrillAndBreak)
+                            yield break;
+                    }
+                }
+            }
+
+        }
+
+        #endregion // DeepFilter
 
         #region AsString
 
@@ -1296,6 +1422,5 @@ namespace System.Text.Json
         }
 
         #endregion // IntoProp
-
     }
 }

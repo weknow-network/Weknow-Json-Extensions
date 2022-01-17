@@ -1,0 +1,24 @@
+{
+  "name": "bnaya",
+  "skills": [
+    "c#",
+    "Typescript",
+    "neo4J",
+    { "role": [ "architect", "cto" ], "level": 3 },
+    "elasticsearch"
+  ],
+  "friends": [
+    {
+      "name": "Yaron",
+      "IsSkipper": true
+    },
+    {
+      "name": "Aviad",
+      "IsSkipper": true
+    },
+    {
+      "name": "Eyal",
+      "IsSkipper": false
+    }
+  ]
+}
