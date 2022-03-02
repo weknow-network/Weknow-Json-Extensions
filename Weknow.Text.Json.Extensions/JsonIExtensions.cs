@@ -623,7 +623,7 @@ namespace System.Text.Json
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitProp(
             this JsonDocument doc,
-            int deep,
+            byte deep,
             params string[] propNames)
         {
             var set = ImmutableHashSet.CreateRange(propNames);
