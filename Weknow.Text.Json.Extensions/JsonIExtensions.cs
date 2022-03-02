@@ -597,7 +597,10 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties which match the filter.
+        /// negative: properties which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitProp(
             this JsonDocument doc,
@@ -611,9 +614,32 @@ namespace System.Text.Json
         /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="doc">The json document.</param>
+        /// <param name="deep">The deep.</param>
+        /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
+        /// <returns>
+        /// positive: properties which match the filter.
+        /// negative: properties which didn't match the filter.
+        /// </returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static SplitResult SplitProp(
+            this JsonDocument doc,
+            int deep,
+            params string[] propNames)
+        {
+            var set = ImmutableHashSet.CreateRange(propNames);
+            return SplitPropInternal(doc.RootElement, set, null, deep);
+        }
+
+        /// <summary>
+        /// Split operation, split properties according to a filter.
+        /// </summary>
+        /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties which match the filter.
+        /// negative: properties which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitProp(
             this JsonDocument doc,
@@ -642,9 +668,32 @@ namespace System.Text.Json
         /// Split operation, split properties according to a filter.
         /// </summary>
         /// <param name="element">The element.</param>
+        /// <param name="deep">The deep.</param>
+        /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
+        /// <returns>
+        /// positive: properties which match the filter.
+        /// negative: properties which didn't match the filter.
+        /// </returns>
+        /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        public static SplitResult SplitProp(
+            this JsonElement element,
+            byte deep,
+            params string[] propNames)
+        {
+            var set = ImmutableHashSet.CreateRange(propNames);
+            return SplitPropInternal(element, set, null, deep);
+        }
+
+        /// <summary>
+        /// Split operation, split properties according to a filter.
+        /// </summary>
+        /// <param name="element">The element.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties which match the filter.
+        /// negative: properties which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitProp(
             this JsonElement element,
@@ -660,7 +709,10 @@ namespace System.Text.Json
         /// <param name="element">The element.</param>
         /// <param name="propNames">The properties name or properties path separate with '.', for example: root.child.grandchild</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties which match the filter.
+        /// negative: properties which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitProp(
             this JsonElement element,
@@ -677,12 +729,15 @@ namespace System.Text.Json
 
 
         /// <summary>
-        /// Split operation, split properties according to a filter.
+        /// Split properties according to a filter from a parent property.
         /// </summary>
         /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name.</param>
         /// <param name="propParentName">The name of the parent property.</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties under the parent which match the filter.
+        /// negative: properties under the parent which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitChidProp(
             this JsonDocument doc,
@@ -694,13 +749,16 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split properties according to a filter.
+        /// Split properties according to a filter from a parent property.
         /// </summary>
         /// <param name="doc">The json document.</param>
         /// <param name="propNames">The properties name.</param>
         /// <param name="propParentName">The name of the parent property.</param>
         /// <param name="deep">The recursive deep (0 (0 = ignores, 1 = only root elements)= only root elements).</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties under the parent which match the filter.
+        /// negative: properties under the parent which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitChidProp(
             this JsonDocument doc,
@@ -712,12 +770,15 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split properties according to a filter.
+        /// Split properties according to a filter from a parent property.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propNames">The properties name.</param>
         /// <param name="propParentName">The name of the parent property.</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties under the parent which match the filter.
+        /// negative: properties under the parent which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitChidProp(
             this JsonElement element,
@@ -729,13 +790,16 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split properties according to a filter.
+        /// Split properties according to a filter from a parent property.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propParentName">The name of the parent property.</param>
         /// <param name="propNames">The properties name.</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties under the parent which match the filter.
+        /// negative: properties under the parent which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitChidProp(
             this JsonElement element,
@@ -747,13 +811,16 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Split operation, split properties according to a filter.
+        /// Split properties according to a filter from a parent property.
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="propParentName">The name of the parent property.</param>
         /// <param name="propNames">The properties name.</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
-        /// <returns></returns>
+        /// <returns>
+        /// positive: properties under the parent which match the filter.
+        /// negative: properties under the parent which didn't match the filter.
+        /// </returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static SplitResult SplitChidProp(
             this JsonElement element,
