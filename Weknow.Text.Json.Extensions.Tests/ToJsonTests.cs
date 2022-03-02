@@ -41,6 +41,24 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
+        public void ToStream_Array_Test()
+        {
+            var arr = new []{ 1, 2, 3 };
+            var json = arr.ToJson();
+            string result = json.AsString();
+            Assert.Equal("[1,2,3]", result);
+        }
+
+        [Fact]
+        public void ToStream_Enumerable_Test()
+        {
+            var arr = new []{ 1, 2, 3 }.Select(m => m);
+            var json = arr.ToJson();
+            string result = json.AsString();
+            Assert.Equal("[1,2,3]", result);
+        }
+
+        [Fact]
         public void ToStream_Default_To_Indent_Test()
         {
             var json = ENTITY.ToJson(SerializerOptions);

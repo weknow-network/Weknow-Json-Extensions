@@ -340,6 +340,9 @@ namespace System.Text.Json
             this T instance,
             JsonSerializerOptions? options = null)
         {
+            if (instance is JsonElement element) return element;
+            if (instance is JsonDocument doc) return doc.RootElement;
+
             options = options ?? SerializerOptions;
             byte[]? j = JsonSerializer.SerializeToUtf8Bytes(instance, options);
             if (j == null)
@@ -1489,5 +1492,170 @@ namespace System.Text.Json
         }
 
         #endregion // IntoProp
+
+        #region AddIntoArray
+
+        /// <summary>
+        /// Adds the addition into existing json array.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException"></exception>
+        public static JsonElement AddIntoArray<T>(this JsonDocument source, params T[] addition) => AddIntoArray(source.RootElement, addition);
+
+        /// <summary>
+        /// Adds the addition into existing json array.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException"></exception>
+        public static JsonElement AddIntoArray<T>(this JsonElement source, params T[] addition)
+        {
+            if (addition.Length == 1)
+                return source.AddIntoArray(addition[0].ToJson());
+            return source.AddIntoArray(addition.Select(m => m.ToJson()).ToJson());
+        }
+
+        /// <summary>
+        /// Adds the addition into existing json array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException"></exception>
+        public static JsonElement AddIntoArray<T>(this JsonElement source,
+            JsonSerializerOptions options, params T[] addition)
+        {
+            if (addition.Length == 1)
+                return source.AddIntoArray(addition[0].ToJson(options));
+            return source.AddIntoArray(addition.Select(m => m.ToJson()).ToJson());
+        }
+
+        /// <summary>
+        /// Adds the addition into existing json array.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <param name="deconstruct">if set to <c>true</c> will be merged into the source (deconstruct).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException"></exception>
+        public static JsonElement AddIntoArray(this JsonDocument source, JsonElement addition, bool deconstruct = true) => AddIntoArray(source.RootElement, addition, deconstruct);
+
+        /// <summary>
+        /// Adds the addition into existing json array.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <param name="deconstruct">if set to <c>true</c> will be merged into the source (deconstruct).</param>
+        /// <returns></returns>
+        /// <exception cref="System.NotSupportedException"></exception>
+        public static JsonElement AddIntoArray(this JsonElement source, JsonElement addition, bool deconstruct = true)
+        {
+            if (source.ValueKind != JsonValueKind.Array)
+                throw new NotSupportedException("Only array are eligible as source");
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartArray();
+                foreach (var item in source.EnumerateArray())
+                {
+                    item.WriteTo(writer);
+                }
+                if (addition.ValueKind == JsonValueKind.Array && deconstruct)
+                {
+                    foreach (var item in addition.EnumerateArray())
+                    {
+                        item.WriteTo(writer);
+                    }
+                }
+                else
+                    addition.WriteTo(writer);
+                writer.WriteEndArray();
+            }
+
+            var reader = new Utf8JsonReader(buffer.WrittenSpan);
+            JsonDocument result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        #endregion // AddIntoArray
+
+        #region AddIntoObject
+
+        /// <summary>
+        /// Adds the addition into existing json object or json array.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <param name="options">The options.</param>
+        /// <returns></returns>
+        public static JsonElement AddIntoObject<T>(this JsonDocument source, T addition,
+            JsonSerializerOptions? options = null) => AddIntoObject(source.RootElement, addition, options);
+
+        /// <summary>
+        /// Adds the addition into existing json object.
+        /// When source is an object, addition expected to be object as well.
+        /// When source is an array, if the addition is an array it will be merged into the source (deconstruct)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <param name="options">The options.</param>
+        /// <returns></returns>
+        public static JsonElement AddIntoObject<T>(this JsonElement source, T addition,
+            JsonSerializerOptions? options = null) => source.AddIntoObject(addition.ToJson(options));
+        
+
+        /// <summary>
+        /// Adds the addition into existing json object or json array.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <returns></returns>
+        public static JsonElement AddIntoObject(this JsonDocument source, JsonElement addition) => AddIntoObject(source.RootElement, addition);
+
+        /// <summary>
+        /// Adds the addition into existing json object.
+        /// When source is an object, addition expected to be object as well.
+        /// When source is an array, if the addition is an array it will be merged into the source (deconstruct)
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="addition">The addition into the source.</param>
+        /// <returns></returns>
+        public static JsonElement AddIntoObject(this JsonElement source, JsonElement addition)
+        {
+            if (source.ValueKind == JsonValueKind.Array)
+                return AddIntoArray(source, addition);
+
+            if (source.ValueKind != JsonValueKind.Object)
+                throw new NotSupportedException("Only object are eligible as source");
+            if (source.ValueKind == JsonValueKind.Object && addition.ValueKind != JsonValueKind.Object)
+                throw new NotSupportedException("When source is an object addition expect to be object as well");
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartObject();
+                foreach (var item in source.EnumerateObject())
+                {
+                    item.WriteTo(writer);
+                }
+                foreach (var item in addition.EnumerateObject())
+                {
+                    item.WriteTo(writer);
+                }
+                writer.WriteEndObject();
+            }
+
+            var reader = new Utf8JsonReader(buffer.WrittenSpan);
+            JsonDocument result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        #endregion // AddIntoObject
     }
 }
