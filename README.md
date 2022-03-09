@@ -35,17 +35,13 @@ json.YieldWhen(/path convention/);
 }
 ```
 
-- "friends.[].name") or "friends.*.name" 
+- **"friends.[].name"** or "friends.*.name" 
   will result with ["Yaron", "Aviad"] 
-- "friends.[0].name") or "friends.*.name" 
+- **"friends.[0].name"** or "friends.*.name" 
   will result with ["Yaron"] 
-- "friends.[0].*") or "friends.*.name" 
+- **"friends.[0].*"** or "friends.*.name" 
   will result with ["Yaron",1] 
 
-
-``` json
-{ "role": [ "architect", "cto" ], "level": 3 }
-```
 
 See: YieldWhen_Path_Test
 
