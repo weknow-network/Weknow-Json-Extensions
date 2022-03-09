@@ -15,15 +15,17 @@ using Xunit.Sdk;
 
 using static Weknow.Text.Json.Constants;
 
+using static System.Text.Json.TraverseFlowInstruction;
+
 namespace Weknow.Text.Json.Extensions.Tests
 {
-    public class DeepFilterTests
+    public class YieldWhenTests
     {
         private readonly ITestOutputHelper _outputHelper;
 
         #region Ctor
 
-        public DeepFilterTests(ITestOutputHelper outputHelper)
+        public YieldWhenTests(ITestOutputHelper outputHelper)
         {
             _outputHelper = outputHelper;
         }
@@ -32,28 +34,28 @@ namespace Weknow.Text.Json.Extensions.Tests
 
 
         [Fact]
-        public async Task DeepFilter_Skill_Test()
+        public async Task YieldWhen_Skill_Test()
         {
             using var srm = File.OpenRead("deep-filter-data.json");
             var source = await JsonDocument.ParseAsync(srm);
 
-            var items = source.DeepFilter((json, deep, breadcrumbs) =>
+            var items = source.YieldWhen((json, deep, breadcrumbs) =>
             {
                 string last = breadcrumbs[^1];
                 if(deep == 0 && last == "skills")
-                    return (false, TraverseFlow.DrillAndBreak);
+                    return Drill;
 
-                if (int.TryParse(last, out _))
+                if (last[0] == '[' && last[^1] == ']')
                 {
-                    if(json.ValueKind == JsonValueKind.String)
-                        return (true, TraverseFlow.Continue);
-                    return (false, TraverseFlow.Continue);
+                    if (json.ValueKind == JsonValueKind.String)
+                        return Yield;
+                    return Skip;
                 }
 
                 return deep switch
                 {
-                    < 2 => (false, TraverseFlow.Drill),
-                    _ => (false, TraverseFlow.BackToParent),
+                    < 3 => Drill,
+                    _ => Do(TraverseFlow.SkipToParent),
                 };
             });
 
@@ -64,12 +66,12 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public async Task DeepFilter_Friends_Test()
+        public async Task YieldWhen_Friends_Test()
         {
             using var srm = File.OpenRead("deep-filter-data.json");
             var source = await JsonDocument.ParseAsync(srm);
 
-            var items = source.DeepFilter((json, deep, breadcrumbs) =>
+            var items = source.YieldWhen((json, deep, breadcrumbs) =>
             {
                 string last = breadcrumbs[^1];
                 if(last == "role") throw new NotSupportedException("shouldn't get so deep");
@@ -77,24 +79,26 @@ namespace Weknow.Text.Json.Extensions.Tests
                 if (deep == 0)
                 {
                     if (last == "friends")
-                        return (false, TraverseFlow.DrillAndBreak);
-                    return (false, TraverseFlow.Continue);
+                        return Drill;
+                    return Skip;
                 }
 
-                if (int.TryParse(last, out _))
+                if (last[0] == '[' && last[^1] == ']')
                 {
                     if(json.TryGetProperty("IsSkipper", out var p) && p.GetBoolean())
-                        return (true, TraverseFlow.Continue);
-                    return (false, TraverseFlow.Continue);
+                        return Yield;
+                    return Skip;
                 }
 
                 return deep switch
                 {
-                    < 2 => (false, TraverseFlow.Drill),
-                    _ => (false, TraverseFlow.BackToParent),
+                    < 3 => Drill,
+                    _ => SkipToParent,
                 };
             });
 
+            _outputHelper.WriteLine("Results:");
+            _outputHelper.WriteLine(items.ToJson().AsIndentString());
             var results = items
                 .Select(m =>
             {

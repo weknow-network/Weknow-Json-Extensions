@@ -63,7 +63,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void Exclude_Root_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.Where((e, _) =>
+            var target = source.RootElement.Where((e, _, _) =>
                                     // remove property with value or raw value elements if > 12
                                     e.ValueKind != JsonValueKind.Number || e.GetInt32() > 12);
 
@@ -88,7 +88,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void Exclude_Deep_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.Where((e, _) =>
+            var target = source.RootElement.Where((e, _, _) =>
                                     // remove property with value or raw value elements if > 12
                                     e.ValueKind != JsonValueKind.Number || e.GetInt32() > 12, 1);
 
@@ -147,7 +147,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void WhereProp_Root_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e, _) => e.Name != "C", onRemove: _fakeOnRemove);
+            var target = source.RootElement.WhereProp((e, _, _) => e.Name != "C", onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -171,7 +171,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void WhereProp_Root_Branch_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e,_) => e.Name != "B", onRemove: _fakeOnRemove);
+            var target = source.RootElement.WhereProp((e,_, _) => e.Name != "B", onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -190,7 +190,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void WhereProp_Recurcive_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e, _) => e.Name != "B21", 35, onRemove: _fakeOnRemove);
+            var target = source.RootElement.WhereProp((e, _, _) => e.Name != "B21", 35, onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -211,7 +211,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void WhereProp_Path_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((_, path) => path != "B.B2.B21", 35, onRemove: _fakeOnRemove);
+            var target = source.RootElement.WhereProp((_, path, _) => path != "B.B2.B21", 35, onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -232,7 +232,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void WhereProp_Recurcive_Shallow_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);
-            var target = source.RootElement.WhereProp((e, _) => e.Name != "B21", 1, onRemove: _fakeOnRemove);
+            var target = source.RootElement.WhereProp((e, _, _) => e.Name != "B21", 1, onRemove: _fakeOnRemove);
 
             Write(source, target);
 
@@ -245,6 +245,67 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(target.TryGetProperty("C", out _));
             A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.Ignored))
                                                 .MustNotHaveHappened();
+        }
+
+        [Fact]
+        public void WhereProp_Path_Array_Test()
+        {
+            string JSON =
+@"{
+	""personalizations"": [
+        {
+            ""to"": [
+    
+                {
+                    ""name"": ""Bnaya"",
+					""email"": ""bnaya@somewhere.com""
+    
+                }
+			],
+			""bcc"": [
+
+                {
+                    ""name"": ""Ruth"",
+					""email"": ""Ruth@somewhere.com""
+
+                },
+				{
+                    ""name"": ""Bnaya Eshet"",
+					""email"": ""bnaya@gmail.com""
+
+                }
+			]
+        },
+        {
+            ""to"": [
+    
+                {
+                    ""name"": ""Mike"",
+					""email"": ""mike@somewhere.com""
+    
+                }
+			]
+        }
+	]
+}
+";
+            var source = JsonDocument.Parse(JSON);
+            var target = source.RootElement.WhereProp("personalizations.[].to.[0].name");
+            //var target = source.RootElement.WhereProp((_, path, _) => path == "personalizations.[].to.[0].name");
+
+            Write(source, target);
+
+            //Assert.True(target.TryGetProperty("", out _));
+            //Assert.True(target.TryGetProperty("B", out var b));
+            //Assert.True(b.TryGetProperty("B1", out _));
+            //Assert.True(b.TryGetProperty("B2", out var b2));
+            //Assert.False(b2.TryGetProperty("B21", out _));
+            //Assert.True(b2.TryGetProperty("B22", out _));
+            //Assert.True(target.TryGetProperty("C", out _));
+            //A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.That.Matches(p => p.Name == "B21")))
+            //                                    .MustHaveHappenedOnceExactly();
+            //A.CallTo(() => _fakeOnRemove.Invoke(A<JsonProperty>.Ignored))
+            //                                    .MustHaveHappenedOnceExactly();
         }
     }
 }

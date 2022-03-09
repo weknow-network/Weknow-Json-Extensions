@@ -15,31 +15,6 @@ using static Weknow.Text.Json.Constants;
 namespace System.Text.Json
 {
 
-    // Determine the traversing flow
-    public enum TraverseFlow
-    {
-        /// <summary>
-        /// Skip and continue the parent flow.
-        /// </summary>
-        BackToParent,
-        /// <summary>
-        /// Continue to sibling or ancestor's sibling (not children).
-        /// </summary>
-        Continue,
-        /// <summary>
-        /// Stop traversing
-        /// </summary>
-        Break,
-        /// <summary>
-        /// Drill into children and continue to sibling or ancestor's sibling.
-        /// </summary>
-        Drill,
-        /// <summary>
-        /// Drill into children and then break (don't continue to sibling or ancestor's sibling).
-        /// </summary>
-        DrillAndBreak
-    }
-
     /// <summary>
     /// Json extensions
     /// </summary>
@@ -102,7 +77,7 @@ namespace System.Text.Json
 
         #endregion // TryGetProperty
 
-        #region DeepFilter
+        #region YieldWhen
 
         /// <summary>
         /// Filters descendant element by predicate.
@@ -114,9 +89,11 @@ namespace System.Text.Json
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
         /// </param>
         /// <returns></returns>
-        public static IEnumerable<JsonElement> DeepFilter(this JsonDocument source, Func<JsonElement, int, IImmutableList<string>, (bool shpuldYield, TraverseFlow flowStrategy)> predicate)
+        public static IEnumerable<JsonElement> YieldWhen(
+            this JsonDocument source,
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowInstruction> predicate)
         {
-            return source.RootElement.DeepFilter(0, ImmutableList<string>.Empty, predicate);
+            return source.RootElement.YieldWhen(0, ImmutableList<string>.Empty, predicate);
         }
 
         /// <summary>
@@ -129,9 +106,9 @@ namespace System.Text.Json
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
         /// </param>
         /// <returns></returns>
-        public static IEnumerable<JsonElement> DeepFilter(this JsonElement source, Func<JsonElement, int, IImmutableList<string>, (bool shpuldYield, TraverseFlow flowStrategy)> predicate)
+        public static IEnumerable<JsonElement> YieldWhen(this JsonElement source, Func<JsonElement, int, IImmutableList<string>, TraverseFlowInstruction> predicate)
         {
-            return source.DeepFilter(0, ImmutableList<string>.Empty, predicate);
+            return source.YieldWhen(0, ImmutableList<string>.Empty, predicate);
         }
 
         /// <summary>
@@ -144,11 +121,11 @@ namespace System.Text.Json
         /// deep: start at 0.
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.</param>
         /// <returns></returns>
-        private static IEnumerable<JsonElement> DeepFilter(
+        private static IEnumerable<JsonElement> YieldWhen(
                                 this JsonElement source,
                                 int deep,
                                 IImmutableList<string> spine,
-                                Func<JsonElement, int, IImmutableList<string>, (bool shpuldYield, TraverseFlow flowStrategy)> predicate)
+                                Func<JsonElement, int, IImmutableList<string>, TraverseFlowInstruction> predicate)
         {
             if (source.ValueKind == JsonValueKind.Object)
             {
@@ -156,21 +133,25 @@ namespace System.Text.Json
                 {
                     var spn = spine.Add(p.Name);
                     var val = p.Value;
-                    var (shouldYield, flowStrategy) = predicate(val, deep, spn);
-                    if (shouldYield) yield return val;
-                    if (flowStrategy == TraverseFlow.Break)
-                        yield break;
-                    if (flowStrategy == TraverseFlow.Drill ||
-                        flowStrategy == TraverseFlow.DrillAndBreak)
+                    var (pick, flow) = predicate(val, deep, spn);
+                    if (pick)
                     {
-                        foreach (var result in val.DeepFilter(deep + 1, spn, predicate))
+                        yield return val;
+                        if (flow == TraverseFlow.SkipWhenMatch)
+                            continue;
+                    }
+                    else if (flow == TraverseFlow.SkipWhenMatch)
+                        flow = TraverseFlow.Drill;
+                    if (flow == TraverseFlow.Skip)
+                        continue;
+                    if (flow == TraverseFlow.SkipToParent)
+                        break;
+                    if (flow == TraverseFlow.Drill)
+                    {
+                        foreach (var result in val.YieldWhen(deep + 1, spn, predicate))
                         {
                             yield return result;
                         }
-                        if (flowStrategy == TraverseFlow.BackToParent)
-                            break;
-                        if (flowStrategy == TraverseFlow.DrillAndBreak)
-                            yield break;
                     }
                 }
             }
@@ -179,29 +160,34 @@ namespace System.Text.Json
                 int i = 0;
                 foreach (JsonElement val in source.EnumerateArray())
                 {
-                    var spn = spine.Add((i++).ToString());
+                    var spn = spine.Add($"[{i++}]");
                     var (shouldYield, flowStrategy) = predicate(val, deep, spn);
-                    if (shouldYield) yield return val;
-                    if (flowStrategy == TraverseFlow.Break)
-                        yield break;
-                    if (flowStrategy == TraverseFlow.Drill ||
-                        flowStrategy == TraverseFlow.DrillAndBreak)
+                    if (shouldYield)
                     {
-                        foreach (var result in val.DeepFilter(deep + 1, spn, predicate))
+                        yield return val;
+                        if (flowStrategy == TraverseFlow.SkipWhenMatch)
+                            continue;
+                    }
+                    else if (flowStrategy == TraverseFlow.SkipWhenMatch)
+                        flowStrategy = TraverseFlow.Drill;
+
+                    if (flowStrategy == TraverseFlow.Skip)
+                        continue;
+                    if (flowStrategy == TraverseFlow.SkipToParent)
+                        break;
+                    if (flowStrategy == TraverseFlow.Drill)
+                    {
+                        foreach (var result in val.YieldWhen(deep + 1, spn, predicate))
                         {
                             yield return result;
                         }
-                        if (flowStrategy == TraverseFlow.BackToParent)
-                            break;
-                        if (flowStrategy == TraverseFlow.DrillAndBreak)
-                            yield break;
                     }
                 }
             }
 
         }
 
-        #endregion // DeepFilter
+        #endregion // YieldWhen
 
         #region AsString
 
@@ -362,7 +348,8 @@ namespace System.Text.Json
         /// <param name="doc">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// CDATA[Func<element, path, deep>
+        /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <param name="onRemove">On remove property notification.</param>
@@ -370,7 +357,7 @@ namespace System.Text.Json
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static JsonDocument WhereProp(
             this JsonDocument doc,
-            Func<JsonProperty, string, bool> filter,
+            Func<JsonProperty, string, int, bool> filter,
             byte deep = 0,
             Action<JsonProperty>? onRemove = null)
         {
@@ -391,7 +378,8 @@ namespace System.Text.Json
         /// <param name="element">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// Func<element, path, deep>
+        /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <param name="onRemove">On remove property notification.</param>
@@ -399,7 +387,7 @@ namespace System.Text.Json
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
         public static JsonElement WhereProp(
             this JsonElement element,
-            Func<JsonProperty, string, bool> filter,
+            Func<JsonProperty, string, int, bool> filter,
             byte deep = 0,
             Action<JsonProperty>? onRemove = null)
         {
@@ -550,12 +538,13 @@ namespace System.Text.Json
         /// <param name="doc">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// Func<element, path, deep>
+        /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
-        public static JsonDocument Where(this JsonDocument doc, Func<JsonElement, string, bool> filter, byte deep = 0)
+        public static JsonDocument Where(this JsonDocument doc, Func<JsonElement, string, int, bool> filter, byte deep = 0)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
@@ -574,12 +563,13 @@ namespace System.Text.Json
         /// <param name="element">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// example: (element, propertyPath) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// Func<element, path, deep>
+        /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
-        public static JsonElement Where(this JsonElement element, Func<JsonElement, string, bool> filter, byte deep = 0)
+        public static JsonElement Where(this JsonElement element, Func<JsonElement, string, int, bool> filter, byte deep = 0)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
@@ -845,9 +835,14 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="element">The element.</param>
         /// <param name="writer">The writer.</param>
-        /// <param name="propFilter">The property filter.</param>
+        /// <param name="propFilter">
+        /// </param>
         /// <param name="propNames">The property filter.</param>
-        /// <param name="elementFilter">The element filter.</param>
+        /// <param name="elementFilter"><![CDATA[
+        /// The filter which determine whether to keep the element. 
+        /// Func<element, path, deep>
+        /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
+        /// </param>
         /// <param name="onRemove">On remove property notification.</param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <param name="curDeep">The current deep.</param>
@@ -856,9 +851,9 @@ namespace System.Text.Json
         private static void WhereImp(
             this JsonElement element,
             Utf8JsonWriter writer,
-            Func<JsonProperty, string, bool>? propFilter = null,
+            Func<JsonProperty, string, int, bool>? propFilter = null,
             IImmutableSet<string>? propNames = null,
-            Func<JsonElement, string, bool>? elementFilter = null,
+            Func<JsonElement, string, int, bool>? elementFilter = null,
             Action<JsonProperty>? onRemove = null,
             byte deep = 0,
             byte curDeep = 0,
@@ -875,7 +870,7 @@ namespace System.Text.Json
                 foreach (JsonProperty e in element.EnumerateObject())
                 {
                     string curSpine = string.IsNullOrEmpty(spine) ? e.Name : $"{spine}.{e.Name}";
-                    bool isEquals = propFilter?.Invoke(e, curSpine) ?? true;
+                    bool isEquals = propFilter?.Invoke(e, curSpine, deep) ?? true;
                     if (propNames != null)
                         isEquals = propNames.Contains(e.Name) || propNames.Contains(curSpine);
                     if (!(isEquals))
@@ -901,7 +896,7 @@ namespace System.Text.Json
                     }
                     else
                     {
-                        if (elementFilter?.Invoke(v, curSpine) ?? true)
+                        if (elementFilter?.Invoke(v, curSpine, deep) ?? true)
                             e.WriteTo(writer);
                         else if (propFilter == null && propNames == null)
                             writer.WriteNull(e.Name);
@@ -912,16 +907,18 @@ namespace System.Text.Json
             else if (element.ValueKind == JsonValueKind.Array)
             {
                 writer.WriteStartArray();
+                int i = 0;
                 foreach (JsonElement e in element.EnumerateArray())
                 {
-                    if (elementFilter?.Invoke(e, spine) ?? true)
-                        e.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), spine);
+                    string curSpine = string.IsNullOrEmpty(spine) ? $"[{i++}]" : $"{spine}.[{i++}]";
+                    if (elementFilter?.Invoke(e, curSpine, deep) ?? true)
+                        e.WhereImp(writer, propFilter, propNames, elementFilter, onRemove, deep, (byte)(curDeep + 1), curSpine);
                 }
                 writer.WriteEndArray();
             }
             else
             {
-                if (elementFilter?.Invoke(element, spine) ?? true)
+                if (elementFilter?.Invoke(element, spine, deep) ?? true)
                     element.WriteTo(writer);
             }
         }
@@ -1609,7 +1606,7 @@ namespace System.Text.Json
         /// <returns></returns>
         public static JsonElement AddIntoObject<T>(this JsonElement source, T addition,
             JsonSerializerOptions? options = null) => source.AddIntoObject(addition.ToJson(options));
-        
+
 
         /// <summary>
         /// Adds the addition into existing json object or json array.
