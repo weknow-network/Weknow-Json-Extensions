@@ -81,7 +81,7 @@ JsonElement json = entity.ToJson();
 
 ``` cs
 var arr = new []{ 1, 2, 3 };
-varJsonElement json = arr.ToJson();
+JsonElement json = arr.ToJson();
 ```
 
 ### AsString
@@ -89,7 +89,7 @@ varJsonElement json = arr.ToJson();
 Convert JsonElement to string
 
 ``` cs
-JsonElement json = ...
+JsonElement json = ...;
 string compact = json.AsString();
 string indented = json.AsIndentString();
 string raw = json.GetRawText(); // same as json.AsIndentString();
@@ -100,7 +100,7 @@ string raw = json.GetRawText(); // same as json.AsIndentString();
 Convert JsonElement to stream 
 
 ``` cs
-JsonElement json = ...
+JsonElement json = ...;
 Stream srm = json.ToStream();
 ```
 
