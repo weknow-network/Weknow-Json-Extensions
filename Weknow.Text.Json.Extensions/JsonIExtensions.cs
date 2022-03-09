@@ -10,6 +10,9 @@ using System.Text.Json.Serialization;
 
 using static Weknow.Text.Json.Constants;
 
+using static System.Text.Json.TraverseFlowInstruction;
+
+
 // credit: https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to
 
 namespace System.Text.Json
@@ -78,6 +81,67 @@ namespace System.Text.Json
         #endregion // TryGetProperty
 
         #region YieldWhen
+
+        /// <summary>
+        /// Filters descendant element by path.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static IEnumerable<JsonElement> YieldWhen(
+            this JsonDocument source,
+            string path)
+        {
+            return source.RootElement.YieldWhen(path);
+        }
+
+        /// <summary>
+        /// Filters descendant element by path.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static IEnumerable<JsonElement> YieldWhen(
+            this JsonElement source,
+            string path)
+        {
+            return source.YieldWhen(false, path);
+        }
+        /// <summary>
+        /// Filters descendant element by path.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="caseSensitive">indicate whether path should be a case sensitive</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static IEnumerable<JsonElement> YieldWhen(
+            this JsonElement source,
+            bool caseSensitive,
+            string path)
+        {
+            var filter = path.Split('.');
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowInstruction> predicate =
+                (current, deep, breadcrumbs) =>
+                {
+                    var cur = breadcrumbs[deep];
+                    var validationPath = filter.Length > deep ? filter[deep] : "";
+                    if (validationPath == "*" || string.Compare(validationPath, cur, !caseSensitive) == 0)
+                    {
+                        if (deep == filter.Length - 1)
+                            return Yield;
+                        return Drill;
+                    }
+                    if (validationPath == "[]" && cur[0] == '[' && cur[^1] == ']')
+                    {
+                        if (deep == filter.Length - 1)
+                            return Yield;
+                        return Drill;
+                    }
+
+                    return Skip;
+                };
+            return source.YieldWhen(0, ImmutableList<string>.Empty, predicate);
+        }
 
         /// <summary>
         /// Filters descendant element by predicate.

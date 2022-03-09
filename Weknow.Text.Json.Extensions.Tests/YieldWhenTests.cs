@@ -32,6 +32,57 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #endregion Ctor
 
+        #region YieldWhen_Path_Test
+
+        [Theory]
+        [InlineData("friends.[].name", "Yaron,Aviad,Eyal")]
+        [InlineData("friends.*.name", "Yaron,Aviad,Eyal")]
+        [InlineData("*.[].name", "Yaron,Aviad,Eyal")]
+        [InlineData("friends.[1].name", "Aviad")]
+        [InlineData("skills.*.Role.[]", "architect,cto")]
+        [InlineData("skills.*.level", "3")]
+        [InlineData("skills.[3].role.[]", "architect,cto")]
+        [InlineData("skills.[3]", @"{""role"":[""architect"",""cto""],""level"":3}")]
+        public async Task YieldWhen_Path_Test(string path, string expectedJoined)
+        {
+            using var srm = File.OpenRead("deep-filter-data.json");
+            var source = await JsonDocument.ParseAsync(srm);
+
+            var items = source.YieldWhen(path);
+
+            var results = items.Select(m => 
+                m.ValueKind switch 
+                {
+                    JsonValueKind.Number => $"{m.GetInt32()}",
+                    JsonValueKind.Array => string.Join(",", m.EnumerateArray().Select(a => a.GetString())),
+                    JsonValueKind.Object => m.AsString(),
+                    _ => m.GetString()
+                }).ToArray();
+            string[] expected = expectedJoined.StartsWith("{") ? new[] { expectedJoined } : expectedJoined.Split(",");
+            Assert.True(expected.SequenceEqual(results));
+        }
+
+        [Theory]
+        [InlineData("skills.[3].role.[]", JsonValueKind.String, "architect")]
+        [InlineData("skills.[3].role", JsonValueKind.Array, "architect,cto")]
+        public async Task YieldWhen_Path_Array_Test(string path, JsonValueKind expectedKind, string expectedJoined)
+        {
+            using var srm = File.OpenRead("deep-filter-data.json");
+            var source = await JsonDocument.ParseAsync(srm);
+
+            var item = source.YieldWhen(path).First();
+            Assert.Equal(expectedKind, item.ValueKind);
+            var res = item.ValueKind switch
+            {
+                JsonValueKind.Array => string.Join(",", item.EnumerateArray().Select(a => a.GetString())),
+                _ => item.GetString()
+            };
+            Assert.Equal(expectedJoined, res);
+        }
+
+        #endregion // YieldWhen_Path_Test
+
+        #region YieldWhen_Skill_Test
 
         [Fact]
         public async Task YieldWhen_Skill_Test()
@@ -64,6 +115,10 @@ namespace Weknow.Text.Json.Extensions.Tests
             string[] expected = { "c#", "Typescript", "neo4J", "elasticsearch" };
             Assert.True(expected.SequenceEqual(results));
         }
+
+        #endregion // YieldWhen_Skill_Test
+
+        #region YieldWhen_Friends_Test
 
         [Fact]
         public async Task YieldWhen_Friends_Test()
@@ -109,5 +164,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             string[] expected = { "Yaron", "Aviad" };
             Assert.True(expected.SequenceEqual(results));
         }
+
+        #endregion // YieldWhen_Friends_Test
     }
 }
