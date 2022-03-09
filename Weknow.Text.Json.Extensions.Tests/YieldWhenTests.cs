@@ -38,6 +38,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         [InlineData("friends.[].name", "Yaron,Aviad,Eyal")]
         [InlineData("friends.*.name", "Yaron,Aviad,Eyal")]
         [InlineData("*.[].name", "Yaron,Aviad,Eyal")]
+        [InlineData("friends.[].*", "Yaron,True,Aviad,True,Eyal,False")]
         [InlineData("friends.[1].name", "Aviad")]
         [InlineData("skills.*.Role.[]", "architect,cto")]
         [InlineData("skills.*.level", "3")]
@@ -54,6 +55,8 @@ namespace Weknow.Text.Json.Extensions.Tests
                 m.ValueKind switch 
                 {
                     JsonValueKind.Number => $"{m.GetInt32()}",
+                    JsonValueKind.True => $"True",
+                    JsonValueKind.False => $"False",
                     JsonValueKind.Array => string.Join(",", m.EnumerateArray().Select(a => a.GetString())),
                     JsonValueKind.Object => m.AsString(),
                     _ => m.GetString()

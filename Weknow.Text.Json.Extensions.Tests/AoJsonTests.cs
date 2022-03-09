@@ -13,7 +13,7 @@ using static Weknow.Text.Json.Constants;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {
-    public class ToJsonTests
+    public class AoJsonTests
     {
         private record BEntity(string C);
         private record Entity(int A, BEntity B);
@@ -28,12 +28,12 @@ namespace Weknow.Text.Json.Extensions.Tests
   }
 }";
         private static readonly JsonWriterOptions OPT_INDENT =
-            new JsonWriterOptions { Indented = true };
+            new JsonWriterOptions { true };
 
 
 
         [Fact]
-        public void ToStream_Default_Test()
+        public void AsString_Default_Test()
         {
             var json = ENTITY.ToJson();
             string result = json.GetRawText();
@@ -41,7 +41,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void ToStream_Array_Test()
+        public void AsString_Array_Test()
         {
             var arr = new []{ 1, 2, 3 };
             var json = arr.ToJson();
@@ -50,16 +50,23 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
-        public void ToStream_Enumerable_Test()
+        public void AsString_Enumerable_Test()
         {
             var arr = new []{ 1, 2, 3 }.Select(m => m);
             var json = arr.ToJson();
             string result = json.AsString();
             Assert.Equal("[1,2,3]", result);
         }
+        [Fact]
+        public void AsAsIndentStringTest()
+        {
+            var json = ENTITY.ToJson();
+            string result = json.AsIndentString();
+            Assert.Equal(JSON_INDENT, result);
+        }
 
         [Fact]
-        public void ToStream_Default_To_Indent_Test()
+        public void AsString_Default_To_Indent_Test()
         {
             var json = ENTITY.ToJson(SerializerOptions);
             string result = json.GetRawText();

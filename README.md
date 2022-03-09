@@ -5,6 +5,9 @@ Functionality of this library includes:
 
 - [YieldWhen](#YieldWhen)
 - [Serialization](#Serialization)
+  - [Convert Object into Json Element](#ToJson)
+  - [Convert Json Element to string](#AsString)
+  - [Convert Json Element to Stream](#ToStream)
   - [ImmutableDictionary converter](#ImmutableDictionary-converter)
 
 ## YieldWhen 
@@ -15,43 +18,36 @@ Enumerate over json elements.
 
 Rely on path convention:
 
+json.YieldWhen(/path convention/);
+
 ``` json
 {
   "friends": [
     {
-      "name": "Yaron",    <----
-      "IsSkipper": true
+      "name": "Yaron",    
+      "id": 1
     },
     {
-      "name": "Aviad",    <----
-      "IsSkipper": true
+      "name": "Aviad",   
+      "id": 2
     }
   ]
 }
 ```
 
-- `json.YieldWhen("friends.[].name")` or  
-  `json.YieldWhen("friends.*.name")`  
+- "friends.[].name") or "friends.*.name" 
   will result with ["Yaron", "Aviad"] 
+- "friends.[0].name") or "friends.*.name" 
+  will result with ["Yaron"] 
+- "friends.[0].*") or "friends.*.name" 
+  will result with ["Yaron",1] 
 
 
-``` cs
-[Theory]
-[InlineData("friends.[].name", "Yaron,Aviad,Eyal")]
-[InlineData("friends.*.name", "Yaron,Aviad,Eyal")]
-[InlineData("*.[].name", "Yaron,Aviad,Eyal")]
-[InlineData("friends.[1].name", "Aviad")]
-[InlineData("skills.*.Role.[]", "architect,cto")]
-[InlineData("skills.*.level", "3")]
-[InlineData("skills.[3].role.[]", "architect,cto")]
-[InlineData("skills.[3]", @"{""role"":[""architect"",""cto""],""level"":3}")]
-public async Task YieldWhen_Path_Test(string path, string expectedJoined)
-{
-    // ...
-    var items = source.YieldWhen(path);
-    // ...
-}
+``` json
+{ "role": [ "architect", "cto" ], "level": 3 }
 ```
+
+See: YieldWhen_Path_Test
 
 ### With Filter
 
@@ -73,6 +69,40 @@ var items = source.YieldWhen((json, deep, breadcrumbs) =>
 ```
 
 ## Serialization
+
+### ToJson
+
+Convert .NET object into JsonElement.
+
+``` cs
+var entity = new Entity(12, new BEntity("Z"));
+JsonElement json = entity.ToJson();
+```
+
+``` cs
+var arr = new []{ 1, 2, 3 };
+varJsonElement json = arr.ToJson();
+```
+
+### AsString
+
+Convert JsonElement to string
+
+``` cs
+JsonElement json = ...
+string compact = json.AsString();
+string indented = json.AsIndentString();
+string raw = json.GetRawText(); // same as json.AsIndentString();
+```
+
+### ToStream
+
+Convert JsonElement to stream 
+
+``` cs
+JsonElement json = ...
+Stream srm = json.ToStream();
+```
 
 ### ImmutableDictionary converter.
 
