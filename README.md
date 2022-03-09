@@ -1,5 +1,5 @@
 # Weknow Json Extensions  [![NuGet](https://img.shields.io/nuget/v/Weknow.Text.Json.Extensions.svg)](https://www.nuget.org/packages/Weknow.Text.Json.Extensions/) [![.NET Build & Publish NuGet V2](https://github.com/weknow-network/Weknow-Json-Extensions/actions/workflows/build-publish.yml/badge.svg)](https://github.com/weknow-network/Weknow-Json-Extensions/actions/workflows/build-publish.yml)
-# Extensions for System.Text.Json 
+Extensions for System.Text.Json 
 
 Functionality of this library includes:
 
@@ -13,6 +13,28 @@ Enumerate over json elements.
 
 ### With Path
 
+Rely on path convention:
+
+``` json
+{
+  "friends": [
+    {
+      "name": "Yaron",    <----
+      "IsSkipper": true
+    },
+    {
+      "name": "Aviad",    <----
+      "IsSkipper": true
+    }
+  ]
+}
+```
+
+- `json.YieldWhen("friends.[].name")` or  
+  `json.YieldWhen("friends.*.name")`  
+  will result with ["Yaron", "Aviad"] 
+
+
 ``` cs
 [Theory]
 [InlineData("friends.[].name", "Yaron,Aviad,Eyal")]
@@ -25,9 +47,7 @@ Enumerate over json elements.
 [InlineData("skills.[3]", @"{""role"":[""architect"",""cto""],""level"":3}")]
 public async Task YieldWhen_Path_Test(string path, string expectedJoined)
 {
-    using var srm = File.OpenRead("deep-filter-data.json");
-    var source = await JsonDocument.ParseAsync(srm);
-
+    // ...
     var items = source.YieldWhen(path);
     // ...
 }
