@@ -1,0 +1,34 @@
+{
+  "from": {
+    "name": "Comp",
+    "email": "no-reply@gmail.com"
+  },
+  "personalizations": [
+    {
+      "to": [
+        {
+          "name": "Person Q",
+          "email": "q@hotmail.com"
+        }
+      ],
+      "bcc": [
+        {
+          "name": "Person Z",
+          "email": "z@gmail.com"
+        },
+        {
+          "name": "person Y",
+          "email": "y@gmail.com"
+        }
+      ]
+    }
+  ],
+  "categories": [
+    "env:production"
+  ],
+
+  "reply_to": {
+    "name": "Person X",
+    "email": "x@gmail.com"
+  }
+}

@@ -681,7 +681,11 @@ namespace System.Text.Json
             this JsonElement json,
             JsonWriterOptions options = default)
         {
-            if (json.ValueKind == JsonValueKind.Undefined)
+            if (json.ValueKind == JsonValueKind.String) return json.GetString() ?? String.Empty;
+            if (json.ValueKind == JsonValueKind.Number) return $"{json.GetDouble()}";
+            if (json.ValueKind == JsonValueKind.True) return "False";
+            if (json.ValueKind == JsonValueKind.False) return "False";
+            if (json.ValueKind == JsonValueKind.Null || json.ValueKind == JsonValueKind.Undefined)
                 return String.Empty;
             using var ms = new MemoryStream();
             using (var w = new Utf8JsonWriter(ms, options))
@@ -711,15 +715,7 @@ namespace System.Text.Json
         public static string AsIndentString(
             this JsonElement json)
         {
-            if (json.ValueKind == JsonValueKind.Undefined)
-                return String.Empty;
-            using var ms = new MemoryStream();
-            using (var w = new Utf8JsonWriter(ms, INDENTED_JSON_OPTIONS))
-            {
-                json.WriteTo(w);
-            }
-            var result = Encoding.UTF8.GetString(ms.ToArray());
-            return result;
+            return json.AsString(INDENTED_JSON_OPTIONS);
         }
 
         #endregion // AsString

@@ -32,6 +32,18 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #endregion Ctor
 
+        #region Write
+
+        private void Write(JsonDocument source, JsonElement target)
+        {
+            _outputHelper.WriteLine("Source:-----------------");
+            _outputHelper.WriteLine(source.RootElement.AsString());
+            _outputHelper.WriteLine("Target:-----------------");
+            _outputHelper.WriteLine(target.AsString());
+        }
+
+        #endregion // Write
+
         #region YieldWhen_Path_Test
 
         [Theory]
@@ -169,5 +181,25 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         #endregion // YieldWhen_Friends_Test
+
+        #region YieldWhen_SendGrid_Test
+
+        [Theory]
+        [InlineData("personalizations.[].to.[].name", "Person Q")]
+        [InlineData("personalizations.[].to.[].email", "q@hotmail.com")]
+        [InlineData("personalizations.[].to.[]", @"{""name"":""Person Q"",""email"":""q@hotmail.com""}")]
+        public async Task YieldWhen_SendGrid_Test(string path, string expected)
+        {
+            _outputHelper.WriteLine($"PATH: {path}");
+            using var srm = File.OpenRead("send-grid.json");
+            var source = await JsonDocument.ParseAsync(srm);
+
+            var result = source.YieldWhen(path).First();
+            Write(source, result);
+
+            Assert.Equal(expected, result.AsString());
+        }
+
+        #endregion // YieldWhen_SendGrid_Test
     }
 }
