@@ -1,4 +1,4 @@
-name: Build & Deploy NuGet
+name: Prepare
 
 # doc: https://docs.github.com/en/actions
 # variables: https://docs.github.com/en/actions/learn-github-actions/environment-variables
@@ -15,20 +15,11 @@ on:
         description: 'Log level'     
         required: false
         default: 'warning'
+    
   
 jobs:
 
   version_increment:
     uses: weknow-network/weknow-workflows/.github/workflows/dotnet-increment-version.yml@main
       
-  build-nuget:
-    uses: weknow-network/weknow-workflows/.github/workflows/dotnet-build-deploy-public-nuget.yml@main
-    needs: [version_increment]
-    secrets:
-      NUGET_PUBLISH: ${{ secrets.NUGET_PUBLISH }}
-    with:
-      build-config: Release
-      dotnet-version: 5.x
-      include-prerelease: false
-
-
+ 
