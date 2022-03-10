@@ -4,6 +4,8 @@ Extensions for System.Text.Json
 Functionality of this library includes:
 
 - [YieldWhen](#YieldWhen)
+- [Filter](#Filter)
+- [Exclude](#Exclude)
 - [Serialization](#Serialization)
   - [Convert Object into Json Element](#ToJson)
   - [Convert Json Element to string](#AsString)
@@ -62,6 +64,100 @@ var items = source.YieldWhen((json, deep, breadcrumbs) =>
         _ => Do(TraverseFlow.SkipToParent),
     };
 });
+```
+
+## Filter
+
+Filter operation, clean up the element according to a filter.  
+It excludes whatever doesn't match the filter
+
+``` json
+{
+  "A": 10,
+  "B": [
+    { "Val": 40 },
+    { "Val": 20 },
+    { "Factor": 20 }
+  ],
+  "C": [0, 25, 50, 100 ],
+  "Note": "Re-shape json"
+}
+```
+
+Filter:
+``` cs
+JsonElement source = ..;
+var target = source.Filter((e, _, _) =>
+            e.ValueKind != JsonValueKind.Number || e.GetInt32() > 30 
+            ? TraverseFlowWrite.Drill 
+            : TraverseFlowWrite.Skip);
+```
+Will result in:
+``` cs
+{
+  "B": [ { "Val": 40 }],
+  "C": [ 50, 100 ],
+  "Note": "Re-shape json"
+}
+```
+### Path based Filter:
+
+``` cs
+var target = source.Filter("B.*.val");
+// results: {"B":[{"Val":40},{"Val":20}]}
+```
+
+``` cs
+var target = source.Filter("B.[]");
+// results: {"B":[{"Val":40},{"Val":20},{"Factor":20}]}
+```
+
+``` cs
+var target = source.Filter("B.[].Factor");
+// results: {"B":[{"Factor":20}]}
+```
+
+``` cs
+var target = source.Filter("B.[1].val");
+// results: {"B":[{"Val":20}]}
+```
+
+## Exclude
+
+Exclude is kind of opposite of Filter.
+It instruct which elements to remove.
+
+``` json
+{
+  "A": 10,
+  "B": [
+    { "Val": 40 },
+    { "Val": 20 },
+    { "Factor": 20 }
+  ],
+  "C": [0, 25, 50, 100 ],
+  "Note": "Re-shape json"
+}
+```
+
+``` cs
+var target = source.Exclude("B.*.val");
+// results: {"A":10,"B":[{"Factor":20}],"C":[0,25,50,100],"Note":"Re-shape json"}
+```
+
+``` cs
+var target = source.Exclude("B.[]");
+// results: {"A":10,"B":[],"C":[],"Note":"Re-shape json"}
+```
+
+``` cs
+var target = source.Exclude("B.[1]");
+// results: {"A":10,"B":[{"Val":40},{"Factor":20}],"C":[0,50,100],"Note":"Re-shape json"}
+```
+
+``` cs
+var target = source.Exclude("B");
+// results: {"A":10,"C":[0,25,50,100],"Note":"Re-shape json"}
 ```
 
 ## Serialization

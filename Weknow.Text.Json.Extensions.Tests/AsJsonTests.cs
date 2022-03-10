@@ -13,7 +13,7 @@ using static Weknow.Text.Json.Constants;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {
-    public class AoJsonTests
+    public class AsJsonTests
     {
         private record BEntity(string C);
         private record Entity(int A, BEntity B);
@@ -27,9 +27,6 @@ namespace Weknow.Text.Json.Extensions.Tests
     ""c"": ""Z""
   }
 }";
-        private static readonly JsonWriterOptions OPT_INDENT =
-            new JsonWriterOptions { true };
-
 
 
         [Fact]

@@ -21,14 +21,6 @@ namespace System.Text.Json
         ///// <summary>
         ///// Stop traversing
         ///// </summary>
-        //Break,
-        /// <summary>
-        /// Drill into children and continue to sibling or ancestor's sibling.
-        /// </summary>
         Drill,
-        ///// <summary>
-        ///// Drill into children and then break (don't continue to sibling or ancestor's sibling).
-        ///// </summary>
-        //DrillAndBreak
     }
 }

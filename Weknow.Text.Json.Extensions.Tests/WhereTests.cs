@@ -85,6 +85,24 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
         [Fact]
+        public void Where_Sample_Test()
+        {
+            var source = JsonDocument.Parse(JSON_INDENT);
+            var target = source.RootElement.Where((e, path, deep) =>
+                                  {
+                                      if (deep > 4) return true;
+                                      if(e.ValueKind == JsonValueKind.Number)
+                                          return e.GetInt32() > 30;
+                                      return (path.StartsWith("B"));
+                                  });
+
+            Write(source, target);
+
+            string expected = @"{""A"":null,""B"":{""B1"":""Cool"",""B2"":{""B21"":{""B211"":211},""B22"":22}},""C"":[],""D"":[]}";
+            Assert.Equal(expected, target.AsString());
+        }
+
+        [Fact]
         public void Exclude_Deep_Test()
         {
             var source = JsonDocument.Parse(JSON_INDENT);

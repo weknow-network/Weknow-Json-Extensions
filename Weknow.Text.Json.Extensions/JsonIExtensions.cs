@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using static Weknow.Text.Json.Constants;
 
 using static System.Text.Json.TraverseFlowInstruction;
+using System.Threading;
 
 
 // credit: https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-converters-how-to
@@ -28,6 +29,119 @@ namespace System.Text.Json
         /// </summary>
         public static readonly JsonElement Empty = CreateEmptyJsonElement();
         private static JsonWriterOptions INDENTED_JSON_OPTIONS = new JsonWriterOptions { Indented = true };
+
+        #region CreatePathFilter
+
+        /// <summary>
+        /// Creates a path filter
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
+        /// <returns></returns>
+        private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowInstruction> CreatePathFilter(string path, bool caseSensitive = false)
+        {
+            var filter = path.Split('.');
+
+            return (current, deep, breadcrumbs) =>
+            {
+                var cur = breadcrumbs[deep];
+                var validationPath = filter.Length > deep ? filter[deep] : "";
+                if (validationPath == "*" || string.Compare(validationPath, cur, !caseSensitive) == 0)
+                {
+                    if (deep == filter.Length - 1)
+                        return Yield;
+                    return Drill;
+                }
+                if (validationPath == "[]" && cur[0] == '[' && cur[^1] == ']')
+                {
+                    if (deep == filter.Length - 1)
+                        return Yield;
+                    return Drill;
+                }
+
+                return Skip;
+            };
+        }
+
+        #endregion // CreatePathFilter
+
+        #region CreatePathWriteFilter
+
+        /// <summary>
+        /// Creates a path filter
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
+        /// <param name="invert">if set to <c>true</c> [inverts the result].</param>
+        /// <returns></returns>
+        private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> CreatePathWriteFilter(string path, bool caseSensitive = false, bool invert = false)
+        {
+            var filter = path.Split('.');
+
+            return (current, deep, breadcrumbs) =>
+            {
+                var cur = breadcrumbs[deep];
+                var validationPath = filter.Length > deep ? filter[deep] : "";
+                if (validationPath == "*" || string.Compare(validationPath, cur, !caseSensitive) == 0)
+                {
+                    if (deep == filter.Length - 1)
+                        return TraverseFlowWrite.Pick;
+                    return TraverseFlowWrite.Drill;
+                }
+                if (validationPath == "[]" && cur[0] == '[' && cur[^1] == ']')
+                {
+                    if (deep == filter.Length - 1)
+                        return TraverseFlowWrite.Pick;
+                    return TraverseFlowWrite.Drill;
+                }
+
+                return TraverseFlowWrite.Skip;
+            };
+        }
+
+        #endregion // CreatePathWriteFilter
+
+        #region CreateExcludePathWriteFilter
+
+        /// <summary>
+        /// Creates a path filter
+        /// </summary>
+        /// <param name="path">The path.</param>
+        /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
+        /// <param name="invert">if set to <c>true</c> [inverts the result].</param>
+        /// <returns></returns>
+        private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> CreateExcludePathWriteFilter(string path, bool caseSensitive = false, bool invert = false)
+        {
+            var filter = path.Split('.');
+
+            return (current, deep, breadcrumbs) =>
+            {
+                var cur = breadcrumbs[deep];
+                var validationPath = filter.Length > deep ? filter[deep] : "";
+                if (validationPath == "*" || string.Compare(validationPath, cur, !caseSensitive) == 0)
+                {
+                    if (deep == filter.Length - 1)
+                        return TraverseFlowWrite.Skip;
+                    return TraverseFlowWrite.Drill;
+                }
+                if (validationPath == "[]" && cur[0] == '[' && cur[^1] == ']')
+                {
+                    if (deep == filter.Length - 1)
+                        return TraverseFlowWrite.Skip;
+                    return TraverseFlowWrite.Drill;
+                }
+                if (validationPath.Length > 2 && validationPath[0] == '[' && validationPath[^1] == ']')
+                {
+                    if(cur == validationPath)
+                        return TraverseFlowWrite.Skip;
+                    return TraverseFlowWrite.Pick;
+                }
+
+                return TraverseFlowWrite.Drill;
+            };
+        }
+
+        #endregion // CreateExcludePathWriteFilter
 
         #region TryGetProperty
 
@@ -107,6 +221,7 @@ namespace System.Text.Json
         {
             return source.YieldWhen(false, path);
         }
+
         /// <summary>
         /// Filters descendant element by path.
         /// </summary>
@@ -119,27 +234,8 @@ namespace System.Text.Json
             bool caseSensitive,
             string path)
         {
-            var filter = path.Split('.');
             Func<JsonElement, int, IImmutableList<string>, TraverseFlowInstruction> predicate =
-                (current, deep, breadcrumbs) =>
-                {
-                    var cur = breadcrumbs[deep];
-                    var validationPath = filter.Length > deep ? filter[deep] : "";
-                    if (validationPath == "*" || string.Compare(validationPath, cur, !caseSensitive) == 0)
-                    {
-                        if (deep == filter.Length - 1)
-                            return Yield;
-                        return Drill;
-                    }
-                    if (validationPath == "[]" && cur[0] == '[' && cur[^1] == ']')
-                    {
-                        if (deep == filter.Length - 1)
-                            return Yield;
-                        return Drill;
-                    }
-
-                    return Skip;
-                };
+                CreatePathFilter(path, caseSensitive);
             return source.YieldWhen(0, ImmutableList<string>.Empty, predicate);
         }
 
@@ -148,9 +244,11 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="predicate">
-        /// The predicate: (current, deep, breadcrumbs spine) =&gt; (should yield, flow strategy).
+        /// <![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
         /// deep: start at 0.
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// TIP: using static System.Text.Json.TraverseFlowInstruction;]]>
         /// </param>
         /// <returns></returns>
         public static IEnumerable<JsonElement> YieldWhen(
@@ -165,9 +263,11 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="predicate">
-        /// The predicate: (current, deep, breadcrumbs spine) =&gt; (should yield, flow strategy).
+        /// <![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
         /// deep: start at 0.
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// TIP: using static System.Text.Json.TraverseFlowInstruction;]]>
         /// </param>
         /// <returns></returns>
         public static IEnumerable<JsonElement> YieldWhen(this JsonElement source, Func<JsonElement, int, IImmutableList<string>, TraverseFlowInstruction> predicate)
@@ -181,9 +281,13 @@ namespace System.Text.Json
         /// <param name="source">The source.</param>
         /// <param name="deep">The deep.</param>
         /// <param name="spine">The breadcrumbs spine.</param>
-        /// <param name="predicate">The predicate: (current, deep, breadcrumbs spine) =&gt; (should yield, flow strategy).
+        /// <param name="predicate">
+        /// <![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
         /// deep: start at 0.
-        /// breadcrumbs spine: spine of ancestor's properties and arrays index.</param>
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// TIP: using static System.Text.Json.TraverseFlowInstruction;]]>
+        /// </param>
         /// <returns></returns>
         private static IEnumerable<JsonElement> YieldWhen(
                                 this JsonElement source,
@@ -252,6 +356,305 @@ namespace System.Text.Json
         }
 
         #endregion // YieldWhen
+
+        #region Filter
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a filter
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static JsonElement Filter(
+            this JsonDocument source,
+            string path)
+        {
+            return source.RootElement.Filter(path);
+        }
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a path
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static JsonElement Filter(
+            this JsonElement source,
+            string path)
+        {
+            return source.Filter(false, path);
+        }
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a case-sensitive path
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static JsonElement FilterSensitive(
+            this JsonElement source,
+            string path)
+        {
+            return source.Filter(true, path);
+        }
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a path
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="caseSensitive">indicate whether path should be a case sensitive</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        private static JsonElement Filter(
+            this JsonElement source,
+            bool caseSensitive,
+            string path)
+        {
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate =
+                CreatePathWriteFilter(path, caseSensitive);
+            return source.Filter(predicate);
+        }
+
+        /// <summary>
+        /// Filters descendant element by predicate.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="predicate">
+        /// <![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// TIP: using static System.Text.Json.TraverseFlowWrite;]]>
+        /// </param>
+        /// <param name="onRemove">         
+        /// <![CDATA[
+        /// Optional remove element notification.
+        /// Action's signature : (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.]]>
+        /// </param>
+        /// <returns></returns>
+        public static JsonElement Filter(
+            this JsonDocument source,
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate,
+            Action<JsonElement, int, IImmutableList<string>>? onRemove = null)
+        {
+            return source.RootElement.Filter(predicate);
+        }
+
+        /// <summary>
+        /// Filters descendant element by predicate.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="predicate">
+        /// <![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// TIP: using static System.Text.Json.TraverseFlowWrite;]]>
+        /// </param>
+        /// <param name="onRemove">         
+        /// <![CDATA[
+        /// Optional remove element notification.
+        /// Action's signature : (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.]]>
+        /// </param>
+        /// <returns></returns>
+        public static JsonElement Filter(
+            this JsonElement source,
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate,
+            Action<JsonElement, int, IImmutableList<string>>? onRemove = null)
+        {
+            var bufferWriter = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(bufferWriter))
+            {
+                source.FilterImp(writer, predicate, onRemove);
+            }
+            var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
+            var result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+
+        #endregion // Filter
+
+        #region Exclude
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a filter
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static JsonElement Exclude(
+            this JsonDocument source,
+            string path)
+        {
+            return source.RootElement.Exclude(path);
+        }
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a path
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static JsonElement Exclude(
+            this JsonElement source,
+            string path)
+        {
+            return source.Exclude(false, path);
+        }
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a case-sensitive path
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        public static JsonElement ExcludeSensitive(
+            this JsonElement source,
+            string path)
+        {
+            return source.Exclude(true, path);
+        }
+
+        /// <summary>
+        /// Rewrite json while excluding elements according to a path
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="caseSensitive">indicate whether path should be a case sensitive</param>
+        /// <param name="path">The path.</param>
+        /// <returns></returns>
+        private static JsonElement Exclude(
+            this JsonElement source,
+            bool caseSensitive,
+            string path)
+        {
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate =
+                CreateExcludePathWriteFilter(path, caseSensitive);
+            return source.Filter(predicate);
+        }
+
+        #endregion // Exclude
+
+        #region FilterImp
+
+        /// <summary>
+        /// Where operation, clean up the element according to the filter
+        /// (exclude whatever don't match the filter).
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <param name="writer">The writer.</param>
+        /// <param name="predicate"><![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// TIP: using static System.Text.Json.TraverseFlowWrite;]]></param>
+        /// <param name="onRemove"><![CDATA[
+        /// Optional remove element notification.
+        /// Action's signature : (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.]]></param>
+        /// <param name="deep">The current deep.</param>
+        /// <param name="breadcrumbs">the path into the json</param>
+        /// <param name="propParent">if set to <c>true</c> [parent is property].</param>
+        private static void FilterImp(
+            this JsonElement element,
+            Utf8JsonWriter writer,
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate,
+            Action<JsonElement, int, IImmutableList<string>>? onRemove = null,
+            int deep = 0,
+            IImmutableList<string>? breadcrumbs = null,
+            bool propParent = false)
+        {
+            IImmutableList<string> spine = breadcrumbs ?? ImmutableList<string>.Empty;
+            if (element.ValueKind == JsonValueKind.Object)
+            {
+                int count = 0;
+                void TryStartObject()
+                {
+                    if (Interlocked.Increment(ref count) == 1)
+                        writer.WriteStartObject();
+                }
+                void TryEndObject()
+                {
+                    if (count > 0)
+                        writer.WriteEndObject();
+                }
+                if (propParent) TryStartObject();
+                foreach (JsonProperty p in element.EnumerateObject())
+                {
+                    var spn = spine.Add(p.Name);
+                    var val = p.Value;
+                    var flow = predicate(val, deep, spn);
+                    switch (flow)
+                    {
+                        case TraverseFlowWrite.Pick:
+                            TryStartObject();
+                            writer.WritePropertyName(p.Name);
+                            val.WriteTo(writer);
+                            break;
+                        case TraverseFlowWrite.SkipToParent:
+                        case TraverseFlowWrite.Skip:
+                            onRemove?.Invoke(val, deep, spn);
+                            break;
+                        case TraverseFlowWrite.Drill:
+                            TryStartObject();
+                            writer.WritePropertyName(p.Name);
+                            if (val.ValueKind == JsonValueKind.Object || val.ValueKind == JsonValueKind.Array)
+                                val.FilterImp(writer, predicate, onRemove, deep + 1, spn, true);
+                            else
+                                val.WriteTo(writer);
+                            break;
+                    }
+
+                    if (flow == TraverseFlowWrite.SkipToParent)
+                        break;
+                }
+                TryEndObject();
+            }
+            else if (element.ValueKind == JsonValueKind.Array)
+            {
+                writer.WriteStartArray();
+                int i = 0;
+                foreach (JsonElement val in element.EnumerateArray())
+                {
+                    var spn = spine.Add($"[{i++}]");
+                    var flow = predicate(val, deep, spn);
+                    switch (flow)
+                    {
+                        case TraverseFlowWrite.Pick:
+                            val.WriteTo(writer);
+                            break;
+                        case TraverseFlowWrite.SkipToParent:
+                        case TraverseFlowWrite.Skip:
+                            onRemove?.Invoke(val, deep, spn);
+                            break;
+                        case TraverseFlowWrite.Drill:
+                            if (val.ValueKind == JsonValueKind.Object || val.ValueKind == JsonValueKind.Array)
+                                val.FilterImp(writer, predicate, onRemove, deep + 1, spn);
+                            else
+                                val.WriteTo(writer);
+                            break;
+                    }
+
+                    if (flow == TraverseFlowWrite.SkipToParent)
+                        break;
+                }
+                writer.WriteEndArray();
+            }
+            else
+            {
+                element.WriteTo(writer);
+            }
+        }
+
+        #endregion // FilterImp
 
         #region AsString
 
@@ -412,7 +815,7 @@ namespace System.Text.Json
         /// <param name="doc">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// CDATA[Func<element, path, deep>
+        /// CDATA[Func<element, path, deep, bool result>
         /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
@@ -442,7 +845,7 @@ namespace System.Text.Json
         /// <param name="element">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// Func<element, path, deep>
+        /// Func<element, path, deep, bool result>
         /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
@@ -602,12 +1005,13 @@ namespace System.Text.Json
         /// <param name="doc">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// Func<element, path, deep>
+        /// Func<element, path, deep, bool result>
         /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use Filter", false)]
         public static JsonDocument Where(this JsonDocument doc, Func<JsonElement, string, int, bool> filter, byte deep = 0)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
@@ -627,12 +1031,13 @@ namespace System.Text.Json
         /// <param name="element">The element.</param>
         /// <param name="filter"><![CDATA[
         /// The filter which determine whether to keep the property. 
-        /// Func<element, path, deep>
+        /// Func<element, path, deep, bool result>
         /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="deep">The recursive deep (0 = ignores, 1 = only root elements).</param>
         /// <returns></returns>
         /// <exception cref="System.NotSupportedException">Only 'Object' element are supported</exception>
+        [Obsolete("Use Filter", false)]
         public static JsonElement Where(this JsonElement element, Func<JsonElement, string, int, bool> filter, byte deep = 0)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
@@ -904,7 +1309,7 @@ namespace System.Text.Json
         /// <param name="propNames">The property filter.</param>
         /// <param name="elementFilter"><![CDATA[
         /// The filter which determine whether to keep the element. 
-        /// Func<element, path, deep>
+        /// Func<element, path, deep, bool result>
         /// example: (element, path, deep) => element.ValueKind != JsonValueKind.Number && propertyPath == "root.child";]]>
         /// </param>
         /// <param name="onRemove">On remove property notification.</param>
