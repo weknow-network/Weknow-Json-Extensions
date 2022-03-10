@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-	<Version>5.1.35</Version>
+	<Version>5.1.36</Version>
 	  <PackageReleaseNotes>
 		  - Use .NET 6.
 	  </PackageReleaseNotes>
