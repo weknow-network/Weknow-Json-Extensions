@@ -186,6 +186,7 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         [Theory]
         [InlineData("personalizations.[].to.[].name", "Person Q")]
+        [InlineData("personalizations.[].bcc.[].name", "Person Z")]
         [InlineData("personalizations.[].to.[].email", "q@hotmail.com")]
         [InlineData("personalizations.[].to.[]", @"{""name"":""Person Q"",""email"":""q@hotmail.com""}")]
         public async Task YieldWhen_SendGrid_Test(string path, string expected)
