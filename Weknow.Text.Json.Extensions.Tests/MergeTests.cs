@@ -82,6 +82,32 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.Equal(expectedResult.AsString(), merged.AsString());
         }
 
+        [Fact]
+        public void Merge_Object_Test()
+        {
+            var sourceElement = JsonDocument.Parse("{'A':1}".Replace('\'', '"')).RootElement;
+            var joinedElement = new { B = 2};
+            var expectedResult = JsonDocument.Parse("{'A':1, 'b':2}".Replace('\'', '"')).RootElement;
+            var merged = sourceElement.Merge(joinedElement);
+
+            Write(expectedResult, merged, sourceElement, new [] { joinedElement.ToJson() });
+
+            Assert.Equal(expectedResult.AsString(), merged.AsString());
+        }
+
+        [Fact]
+        public void MergeInto_Object_Test()
+        {
+            var sourceElement = JsonDocument.Parse("{'A':1,'B':{'B1':[1,2,3]}}".Replace('\'', '"')).RootElement;
+            var joinedElement = new { X = "Y"};
+            var expectedResult = JsonDocument.Parse("{'A':1, 'B':{'B1':[1,{'x':'Y'},3]}}".Replace('\'', '"')).RootElement;
+            var merged = sourceElement.MergeInto("B.B1.[1]", joinedElement);
+
+            Write(expectedResult, merged, sourceElement, new [] { joinedElement.ToJson() });
+
+            Assert.Equal(expectedResult.AsString(), merged.AsString());
+        }
+
         [Theory]
 
         [InlineData("B", "{'A':1, 'B':{'B1':3, 'C':[1,2,3]}}", "{'A':1,'B': {'B1':1}}", "{'B1':3, 'C':[1,2,3]}")]

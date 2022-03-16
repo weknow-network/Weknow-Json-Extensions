@@ -7,8 +7,10 @@ Functionality of this library includes:
 
 - [YieldWhen](#YieldWhen)
 - [Filter](#Filter)
+  - [Path based Filter][#Path-based-Filter]
 - [Exclude](#Exclude)
 - [Merge](#Merge)
+  - [Merge Into][#Merge-Into]
 - [Serialization](#Serialization)
   - [Convert Object into Json Element](#ToJson)
   - [Convert Json Element to string](#AsString)
@@ -103,7 +105,7 @@ Will result in:
   "Note": "Re-shape json"
 }
 ```
-### Path based Filter:
+### Path based Filter
 
 ``` cs
 var target = source.Filter("B.*.val");
@@ -185,10 +187,50 @@ var target = source.Merge(joined);
 // results: {"A":1,"B":2}
 ```
 
+``` cs
+var target = source.Merge(new { B = 2}); // anonymous type
+// results: {"A":1,"b":2}
+```
+
 More scenarios:
 - {"A":1}.Merge({"B":2,"C":3}) = {"A":1, "B":2, "C"":3}
 - {"A":1}.Merge({"B":2},{"C":3}) = {"A":1, "B":2, "C"":3}
 - {"A":1}.Merge({"B":2},{"C":3}) = {"A":1, "B":2, "C"":3}
+
+### Merge Into
+
+Merging json into specific path of a source json.
+The last json will override previous on conflicts
+
+``` source json
+{
+  "A": 1,
+  "B": {
+    "B1":[1,2,3]
+  }
+}
+```
+
+``` cs
+var joined = 5;
+var target = source.MergeInto("B.B1.[1]", joined);
+// results: { "A": 1, "B": { "B1":[1,5,3] }
+}
+```
+
+``` cs
+var joined = ... // {"New":"Object"};
+var target = source.MergeInto("B.B1.[1]", joined);
+// results: { "A": 1, "B": { "B1":[1,{"New":"Object"},3] }
+}
+```
+
+``` cs
+var joined = new {"New":"Object"}; // anonymous type
+var target = source.MergeInto("B.B1.[1]", joined);
+// results: { "A": 1, "B": { "B1":[1,{"new":"Object"},3] }
+}
+```
 
 ## Serialization
 
