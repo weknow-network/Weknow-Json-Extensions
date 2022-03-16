@@ -38,12 +38,12 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #region Write
 
-        private void Write(JsonElement result, JsonElement expected, JsonElement source, IEnumerable<JsonElement> joined)
+        private void Write( JsonElement expected, JsonElement result,JsonElement source, IEnumerable<JsonElement> joined)
         {
+            _outputHelper.WriteLine("Expected:-----------------");
+            _outputHelper.WriteLine(expected.AsString());
             _outputHelper.WriteLine("Result:-----------------");
             _outputHelper.WriteLine(result.AsString());
-            _outputHelper.WriteLine("Expectes:-----------------");
-            _outputHelper.WriteLine(expected.AsString());
             _outputHelper.WriteLine("");
             _outputHelper.WriteLine("Source:-----------------");
             _outputHelper.WriteLine(source.AsString());
@@ -57,6 +57,7 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #endregion // Write
 
+        #region Merge_Theory_Test
 
         [Theory]
         [InlineData("{'A':1, 'B':2}", "{'A':1}", "{'B':2}")]
@@ -70,10 +71,11 @@ namespace Weknow.Text.Json.Extensions.Tests
         [InlineData("[1,2,3]", "{'A':1}", "[1,2,3]")]
         [InlineData("{'A':2}", "{'A':{'A1':1}}", "{'A':2}")]
         [InlineData("{'A':{'A1':1,'A2':2}}", "{'A':{'A1':1}}", "{'A':{'A2':2}}")]
+        [InlineData("{\"name\":\"env level\",\"role\":\"me too\"}", "{\"name\":\"env level\",\"role\":\"1234\"}", "{\"role\":\"me too\"}")]
         public void Merge_Theory_Test(string expected, string source, params string[] joined)
         {
             var sourceElement = JsonDocument.Parse(source.Replace('\'', '"')).RootElement;
-            var joinedElement = joined.Select(b =>  JsonDocument.Parse(b.Replace('\'', '"')).RootElement);
+            var joinedElement = joined.Select(b => JsonDocument.Parse(b.Replace('\'', '"')).RootElement);
             var expectedResult = JsonDocument.Parse(expected.Replace('\'', '"')).RootElement;
             var merged = sourceElement.Merge(joinedElement);
 
@@ -82,31 +84,77 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.Equal(expectedResult.AsString(), merged.AsString());
         }
 
+        #endregion // Merge_Theory_Test
+
+        #region Merge_Object_Test
+
         [Fact]
         public void Merge_Object_Test()
         {
             var sourceElement = JsonDocument.Parse("{'A':1}".Replace('\'', '"')).RootElement;
-            var joinedElement = new { B = 2};
+            var joinedElement = new { B = 2 };
             var expectedResult = JsonDocument.Parse("{'A':1, 'b':2}".Replace('\'', '"')).RootElement;
-            var merged = sourceElement.Merge(joinedElement);
+            var merged = sourceElement.MergeObject(joinedElement);
 
-            Write(expectedResult, merged, sourceElement, new [] { joinedElement.ToJson() });
+            Write(expectedResult, merged, sourceElement, new[] { joinedElement.ToJson() });
 
             Assert.Equal(expectedResult.AsString(), merged.AsString());
         }
+
+        #endregion // Merge_Object_Test
+
+        #region Merge_JsonObject_Override_Test
+
+        [Fact]
+        public void Merge_JsonObject_Override_Test()
+        {
+            var sourceElement = JsonDocument.Parse("{'a':1, 'c':3}".Replace('\'', '"')).RootElement;
+            var joinedElement = new { A = 2, B = 2 }.ToJson();
+            var expectedResult = JsonDocument.Parse("{'a':2, 'c':3, 'b':2}".Replace('\'', '"')).RootElement;
+            var merged = sourceElement.MergeObject(joinedElement);
+
+            Write(expectedResult, merged, sourceElement, new[] { joinedElement.ToJson() });
+
+            Assert.Equal(expectedResult.AsString(), merged.AsString());
+        }
+
+        #endregion // Merge_JsonObject_Override_Test
+
+        #region Merge_Object_Override_Test
+
+        [Fact]
+        public void Merge_Object_Override_Test()
+        {
+            var sourceElement = JsonDocument.Parse("{'a':1, 'c':3}".Replace('\'', '"')).RootElement;
+            var joinedElement = new { A = 2, B = 2 };
+            var expectedResult = JsonDocument.Parse("{'a':2, 'c':3, 'b':2}".Replace('\'', '"')).RootElement;
+            var merged = sourceElement.MergeObject(joinedElement);
+
+            Write(expectedResult, merged, sourceElement, new[] { joinedElement.ToJson() });
+
+            Assert.Equal(expectedResult.AsString(), merged.AsString());
+        }
+
+        #endregion // Merge_Object_Override_Test
+
+        #region MergeInto_Object_Test
 
         [Fact]
         public void MergeInto_Object_Test()
         {
             var sourceElement = JsonDocument.Parse("{'A':1,'B':{'B1':[1,2,3]}}".Replace('\'', '"')).RootElement;
-            var joinedElement = new { X = "Y"};
+            var joinedElement = new { X = "Y" };
             var expectedResult = JsonDocument.Parse("{'A':1, 'B':{'B1':[1,{'x':'Y'},3]}}".Replace('\'', '"')).RootElement;
-            var merged = sourceElement.MergeInto("B.B1.[1]", joinedElement);
+            var merged = sourceElement.MergeObjectInto("B.B1.[1]", joinedElement);
 
-            Write(expectedResult, merged, sourceElement, new [] { joinedElement.ToJson() });
+            Write(expectedResult, merged, sourceElement, new[] { joinedElement.ToJson() });
 
             Assert.Equal(expectedResult.AsString(), merged.AsString());
         }
+
+        #endregion // MergeInto_Object_Test
+
+        #region MergeInto_Theory_Test
 
         [Theory]
 
@@ -117,7 +165,7 @@ namespace Weknow.Text.Json.Extensions.Tests
         public void MergeInto_Theory_Test(string path, string expected, string source, params string[] joined)
         {
             var sourceElement = JsonDocument.Parse(source.Replace('\'', '"')).RootElement;
-            var joinedElement = joined.Select(b =>  JsonDocument.Parse(b.Replace('\'', '"')).RootElement);
+            var joinedElement = joined.Select(b => JsonDocument.Parse(b.Replace('\'', '"')).RootElement);
             var expectedResult = JsonDocument.Parse(expected.Replace('\'', '"')).RootElement;
             var merged = sourceElement.MergeInto(path, joinedElement);
 
@@ -126,6 +174,10 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.Equal(expectedResult.AsString(), merged.AsString());
         }
 
+        #endregion // MergeInto_Theory_Test
+
+
+        #region JSON_INDENT, JSON2_INDENT, JSON3_INDENT
 
         private const string JSON_INDENT =
 @"{
@@ -168,6 +220,9 @@ namespace Weknow.Text.Json.Extensions.Tests
 }
 ";
 
+        #endregion // JSON_INDENT, JSON2_INDENT, JSON3_INDENT
+
+        #region Merge_Into_Object_Test
 
         [Fact]
         public void Merge_Into_Object_Test()
@@ -187,6 +242,10 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(b2.TryGetProperty("B22", out _));
             Assert.True(b2.TryGetProperty("A", out _));
         }
+
+        #endregion // Merge_Into_Object_Test
+
+        #region Merge_Into_MultiObject_Test
 
         [Fact]
         public void Merge_Into_MultiObject_Test()
@@ -213,5 +272,6 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.Equal(3, c[2].GetInt16());
         }
 
+        #endregion // Merge_Into_MultiObject_Test
     }
 }

@@ -705,21 +705,6 @@ namespace System.Text.Json
         /// <param name="source">The source.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
         /// <returns></returns>
-        public static JsonElement Merge<T>(
-            this JsonElement source,
-            T joined)
-        {
-            var j = joined.ToJson();
-            return source.Merge(j);
-        }
-
-        /// <summary>
-        /// Merge source json with other json (which will override the source on conflicts)
-        /// Array will be concatenate.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="joined">The joined element (will override on conflicts).</param>
-        /// <returns></returns>
         public static JsonElement Merge(
             this JsonDocument source,
             IEnumerable<JsonElement> joined)
@@ -812,7 +797,7 @@ namespace System.Text.Json
                         var j = map[name];
                         val.MergeImp(j, writer);
                         map.Remove(name);
-                        break;
+                        continue;
                     }
                     val.WriteTo(writer);
                 }
@@ -846,6 +831,25 @@ namespace System.Text.Json
 
         #endregion // Merge
 
+        #region MergeObject
+
+        /// <summary>
+        /// Merge source json with other json (which will override the source on conflicts)
+        /// Array will be concatenate.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <returns></returns>
+        public static JsonElement MergeObject<T>(
+            this JsonElement source,
+            T joined)
+        {
+            var j = joined.ToJson();
+            return source.Merge(j);
+        }
+
+        #endregion // MergeObject
+
         #region MergeInto
 
         /// <summary>
@@ -878,23 +882,6 @@ namespace System.Text.Json
             params JsonElement[] joined)
         {
             return source.MergeInto(path, false, (IEnumerable<JsonElement>)joined);
-        }
-
-        /// <summary>
-        /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="path">The target path for merging.</param>
-        /// <param name="joined">The joined element (will override on conflicts).</param>
-        /// <returns></returns>
-        public static JsonElement MergeInto<T>(
-            this JsonElement source,
-            string path,
-            T joined)
-        {
-            var j = joined.ToJson();
-            return source.MergeInto(path, false, j);
         }
 
         /// <summary>
@@ -1088,6 +1075,27 @@ namespace System.Text.Json
         }
 
         #endregion // MergeInto
+
+        #region MergeObjectInto
+
+        /// <summary>
+        /// Merge source json with other json at specific location within the source
+        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// </summary>
+        /// <param name="source">The source.</param>
+        /// <param name="path">The target path for merging.</param>
+        /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <returns></returns>
+        public static JsonElement MergeObjectInto<T>(
+            this JsonElement source,
+            string path,
+            T joined)
+        {
+            var j = joined.ToJson();
+            return source.MergeInto(path, false, j);
+        }
+
+        #endregion // MergeObjectInto
 
         #region AsString
 
