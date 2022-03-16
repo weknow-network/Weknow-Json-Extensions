@@ -2,7 +2,7 @@
   <PropertyGroup>
 	<Version>5.1.37</Version>
 	  <PackageReleaseNotes>
-		  - Use .NET 6.
+		  - Merge internal had changed
 	  </PackageReleaseNotes>
   </PropertyGroup>
   

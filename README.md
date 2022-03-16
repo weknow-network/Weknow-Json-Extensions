@@ -8,6 +8,7 @@ Functionality of this library includes:
 - [YieldWhen](#YieldWhen)
 - [Filter](#Filter)
 - [Exclude](#Exclude)
+- [Merge](#Merge)
 - [Serialization](#Serialization)
   - [Convert Object into Json Element](#ToJson)
   - [Convert Json Element to string](#AsString)
@@ -161,6 +162,33 @@ var target = source.Exclude("B.[1]");
 var target = source.Exclude("B");
 // results: {"A":10,"C":[0,25,50,100],"Note":"Re-shape json"}
 ```
+
+## Merge
+
+Merging 2 or more json.
+The last json will override previous on conflicts
+
+``` source json
+{
+  "A": 1
+}
+```
+
+``` joined json 
+{
+  "B": 2
+}
+```
+
+``` cs
+var target = source.Merge(joined);
+// results: {"A":1,"B":2}
+```
+
+More scenarios:
+- {"A":1}.Merge({"B":2,"C":3}) = {"A":1, "B":2, "C"":3}
+- {"A":1}.Merge({"B":2},{"C":3}) = {"A":1, "B":2, "C"":3}
+- {"A":1}.Merge({"B":2},{"C":3}) = {"A":1, "B":2, "C"":3}
 
 ## Serialization
 
