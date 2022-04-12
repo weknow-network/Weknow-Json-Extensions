@@ -30,5 +30,14 @@ namespace Weknow.Text.Json.Extensions.Tests
 }");
 #pragma warning restore xUnit2000 // Constants and literals should be the expected argument
         }
+
+        [Fact]
+        public void DeSerialize_Test()
+        {
+            var rec = new RecTest(10, "John", ConsoleColor.Cyan);
+            var j = JsonExtensions.Empty.MergeObject(rec);
+            var result = j.Deserialize<RecTest>(Constants.SerializerOptions);
+            Assert.Equal(rec.ToJson().AsString(), result.ToJson().AsString());
+        }
     }
 }
