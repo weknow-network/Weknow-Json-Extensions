@@ -290,7 +290,7 @@ T deserialized = JsonSerializer.Deserialize<T>(json, options);
 
 ```
 
-Looking for other extensions?
+Looking for other extensions?  
 Check the following
 - [Basic extensions](https://github.com/weknow-network/Weknow-BasicExtensions/blob/master/README.md)
 - [Async extensions](https://github.com/weknow-network/Bnaya.CSharp.AsyncExtensions)
