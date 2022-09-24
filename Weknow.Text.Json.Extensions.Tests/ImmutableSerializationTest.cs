@@ -16,8 +16,13 @@ namespace Weknow.Text.Json.Extensions.Tests
             (a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value);
         private readonly static Func<ImmutableDictionary<string, object>, ImmutableDictionary<string, object>, bool> COMPARE_STR_OBJ_DIC =
             (a, b) => a.Count == b.Count && a.All(p => b[p.Key].Equals(p.Value));
+        private readonly static Func<ImmutableDictionary<string, ReadOnlyMemory<byte>>, ImmutableDictionary<string, ReadOnlyMemory<byte>>, bool> COMPARE_STR_MEMORY_BYTES_DIC =
+            (a, b) => a.Count == b.Count && a.All(p => b[p.Key].Equals(p.Value));
         private readonly static Func<ImmutableDictionary<ConsoleColor, string>, ImmutableDictionary<ConsoleColor, string>, bool> COMPARE_IMM_DIC =
             (a, b) => a.Count == b.Count && a.All(p => b[p.Key] == p.Value);
+        private readonly static Func<ImmutableDictionary<string, ReadOnlyMemory<byte>>, ImmutableDictionary<string, ReadOnlyMemory<byte>>, bool> COMPARE_MEMORY_BYTE =
+            (a, b) => a.Count == b.Count && a.All(p => b[p.Key].ToArray().SequenceEqual(p.Value.ToArray()));
+ 
 
 
         [Fact]
@@ -30,19 +35,18 @@ namespace Weknow.Text.Json.Extensions.Tests
             source.AssertSerialization(COMPARE_IMM_DIC);
         }
 
-        #region Dictionary_String_Object_Test
-
-        [Fact(Skip = "not supported")]
-        public void Dictionary_String_Object_Test()
+        [Fact]
+        public void ImmutableDictionary_MemoryBytes_Test()
         {
-            var source = ImmutableDictionary<string, object>.Empty
-                .Add("A", nameof(ConsoleColor.Blue))
-                .Add("B", new Foo(10, "Bamby", DateTime.Now));
+            ReadOnlyMemory<byte> a = new ReadOnlyMemory<byte>(new byte[] { 1, 2, 3 });
+            ReadOnlyMemory<byte> b = new ReadOnlyMemory<byte>(new byte[] { 1, 2, 3 });
 
-            source.AssertSerialization(COMPARE_STR_OBJ_DIC);
+            var source = ImmutableDictionary<string, ReadOnlyMemory<byte>>.Empty
+                .Add("A", a)
+                .Add("B", b);
+
+            source.AssertSerialization(COMPARE_MEMORY_BYTE);
         }
-
-        #endregion // Dictionary_String_Object_Test
 
         [Fact]
         public void Foo_Test()
@@ -103,5 +107,19 @@ namespace Weknow.Text.Json.Extensions.Tests
 
             nested.AssertSerialization();
         }
+
+        #region Skip: Dictionary_String_Object_Test
+
+        [Fact(Skip = "not supported")]
+        public void Dictionary_String_Object_Test()
+        {
+            var source = ImmutableDictionary<string, object>.Empty
+                .Add("A", nameof(ConsoleColor.Blue))
+                .Add("B", new Foo(10, "Bamby", DateTime.Now));
+
+            source.AssertSerialization(COMPARE_STR_OBJ_DIC);
+        }
+
+        #endregion // Skip: Dictionary_String_Object_Test
     }
 }

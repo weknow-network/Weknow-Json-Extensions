@@ -27,7 +27,7 @@ namespace Weknow.Text.Json
                 // PropertyNameCaseInsensitive = true,
                 // IgnoreNullValues = true,
                 WriteIndented = true,
-                Converters = { EnumConvertor, /* JsonDictionaryConverter.Default, */ JsonImmutableDictionaryConverter.Default  }
+                Converters = { EnumConvertor, /* JsonDictionaryConverter.Default, */ JsonImmutableDictionaryConverter.Default, JsonMemoryBytesConverterFactory.Default }
             };
             SerializerOptionsWithStandardDictionary = new JsonSerializerOptions
             {
@@ -36,7 +36,7 @@ namespace Weknow.Text.Json
                 // PropertyNameCaseInsensitive = true,
                 // IgnoreNullValues = true,
                 WriteIndented = true,
-                Converters = { EnumConvertor,  JsonDictionaryConverter.Default,  JsonImmutableDictionaryConverter.Default  }
+                Converters = { EnumConvertor,  JsonDictionaryConverter.Default,  JsonImmutableDictionaryConverter.Default, JsonMemoryBytesConverterFactory.Default }
             };
             SerializerOptionsWithoutConverters = new JsonSerializerOptions
             {
