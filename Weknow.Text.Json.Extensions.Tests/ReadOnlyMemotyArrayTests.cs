@@ -12,27 +12,37 @@ namespace Weknow.Text.Json.Extensions.Tests
 {
     public class ReadOnlyMemotyArrayTests
     {
-        private static readonly Func<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, bool> _comparer =
+        private static readonly Func<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>, bool> ReadOnlyMemoryComparer =
+            (a, b) => a.ToArray().SequenceEqual(b.ToArray());
+        private static readonly Func<Memory<byte>, Memory<byte>, bool> MemoryComparer =
             (a, b) => a.ToArray().SequenceEqual(b.ToArray());
 
         [Fact]
-        public void ReadOnlyArray_Should_Fail_Test()
+        public void ReadOnlyMemory_Serialization_Should_Fail_Test()
         {
             byte[] bytes = { 1, 2, 3, 4, 3, 2, 1 };
             ReadOnlyMemory<byte> source = bytes.AsMemory(); 
 
             Assert.Throws<InvalidOperationException>(() =>
-            source.AssertSerialization(_comparer, options: SerializerOptionsWithoutConverters));
+            source.AssertSerialization(ReadOnlyMemoryComparer, options: SerializerOptionsWithoutConverters));
         }
 
         [Fact]
-        public void ReadOnlyArray_Test()
+        public void ReadOnlyMemory_Serialization_Test()
         {
             byte[] bytes = { 1, 2, 3, 4, 3, 2, 1 };
             ReadOnlyMemory<byte> source = bytes.AsMemory();
 
-            source.AssertSerialization(_comparer);
+            source.AssertSerialization(ReadOnlyMemoryComparer);
         }
 
+        [Fact]
+        public void Memory_Serialization_Test()
+        {
+            byte[] bytes = { 1, 2, 3, 4, 3, 2, 1 };
+            Memory<byte> source = bytes.AsMemory();
+
+            source.AssertSerialization(MemoryComparer);
+        }
     }
 }

@@ -1,46 +1,46 @@
 <Project>
-  <PropertyGroup>
-	<Version>5.1.43</Version>
-	  <PackageReleaseNotes>
-		  - Merge internal had changed
-	  </PackageReleaseNotes>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-	<TargetFramework>net6.0</TargetFramework>
-	<LangVersion>10.0</LangVersion>
-	<Nullable>enable</Nullable>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-	<Configurations>Debug;Release</Configurations>
-	<PackageLicenseExpression>MIT</PackageLicenseExpression>
-	<RepositoryUrl>https://github.com/weknow-network/Weknow-Json-Extensions</RepositoryUrl>
-	<PackageIcon>icon.png</PackageIcon>
-	<PackageIconUrl />
-	<PackageTags>weknow, json, bnaya</PackageTags>
-	<RootNamespace>Weknow.Backend</RootNamespace>
-	<Copyright>Weknow ©</Copyright>
-	<Authors>Weknow</Authors>
-	<Company>Weknow</Company>
-  </PropertyGroup>
-  
-  <PropertyGroup>
-	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
-	<IncludeSource>True</IncludeSource>
-	<IncludeSymbols>True</IncludeSymbols>
-	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
-	<GenerateDocumentationFile>True</GenerateDocumentationFile>
-  </PropertyGroup>
+	<PropertyGroup>
+		<Version>5.1.43</Version>
+		<PackageReleaseNotes>
+			- Move to .NET 7
+		</PackageReleaseNotes>
+	</PropertyGroup>
 
-  <PropertyGroup>
-	<PackageReleaseNotes></PackageReleaseNotes>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0</TargetFramework>
+		<LangVersion>11.0</LangVersion>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
 
-  <ItemGroup>
-	<None Include="icon.png">
-	  <Pack>True</Pack>
-	  <PackagePath></PackagePath>
-	</None>
-  </ItemGroup>
+	<PropertyGroup>
+		<Configurations>Debug;Release</Configurations>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<RepositoryUrl>https://github.com/weknow-network/Weknow-Json-Extensions</RepositoryUrl>
+		<PackageIcon>icon.png</PackageIcon>
+		<PackageIconUrl />
+		<PackageTags>weknow, json, bnaya</PackageTags>
+		<RootNamespace>Weknow.Backend</RootNamespace>
+		<Copyright>Weknow ©</Copyright>
+		<Authors>Weknow</Authors>
+		<Company>Weknow</Company>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<IncludeSource>True</IncludeSource>
+		<IncludeSymbols>True</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<PackageReleaseNotes></PackageReleaseNotes>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="icon.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
 </Project>
