@@ -1,6 +1,6 @@
 <Project>
 	<PropertyGroup>
-		<Version>5.1.45</Version>
+		<Version>5.1.46</Version>
 		<PackageReleaseNotes>
 			- Move to .NET 7
 		</PackageReleaseNotes>
