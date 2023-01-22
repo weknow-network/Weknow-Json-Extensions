@@ -40,44 +40,54 @@ namespace Weknow.Text.Json.Extensions.Tests
             _outputHelper.WriteLine(positive.AsString());
         }
 
+        public enum AddIfEmpty
+        {
+            True,
+            False
+        }
+        public enum CaseSensitive
+        {
+            True,
+            False
+        }
 
         [Theory]
-        [InlineData(""" { "A": 0, "B": 0 } """,
-            """ { "A": 0, "B": 0, "C": 1 } """,
+        [InlineData(""" { "A1": 0, "B": 0 } """,
+            """ { "A1": 0, "B": 0, "C": 1 } """,
             "",
             "C", 1,
-            true, true)]
-        [InlineData(""" { "Start": { "A": 0, "B": 0 } } """,
-            """ { "Start": { "A": 0, "B": 0, "C": 1 } } """,
+            AddIfEmpty.True, CaseSensitive.True)]
+        [InlineData(""" { "Start": { "A2": 0, "B": 0 } } """,
+            """ { "Start": { "A2": 0, "B": 0, "C": 1 } } """,
             "Start",
             "C", 1,
-            true, true)]
-        [InlineData(""" { "Start": { "A": 0, "B": 0 } } """,
-            """ { "Start": { "A": 0, "B": 0} } """,
-            "start",
-            "C", 1, // todo throw?
-            true, true)]
-        [InlineData(""" { "Start": { "A": 0, "B": 0 } } """,
-            """ { "Start": { "A": 0, "B": 0 } } """,
+            AddIfEmpty.True, CaseSensitive.True)]
+        [InlineData(""" { "Start": { "A3": 0, "B": 0 } } """,
+            """ { "Start": { "A3": 0, "B": 0} } """,
             "start",
             "C", 1,
-            false, true)]
-        [InlineData(""" { "Start": { "A": 0, "B": 0 } } """,
-            """ { "Start": { "A": 0, "B": 0, "b": 1 } } """,
+            AddIfEmpty.True, CaseSensitive.True)]
+        [InlineData(""" { "Start": { "A4": 0, "B": 0 } } """,
+            """ { "Start": { "A4": 0, "B": 0 } } """,
+            "start",
+            "C", 1,
+            AddIfEmpty.False, CaseSensitive.True)]
+        [InlineData(""" { "Start": { "A5": 0, "B": 0 } } """,
+            """ { "Start": { "A5": 0, "B": 0, "b": 1 } } """,
             "Start",
             "b", 1,
-            false, true)]
+            AddIfEmpty.False, CaseSensitive.True)]
         public void TryAdd_WithPath_Test(string origin,
                                          string expected,
                                          string path,
                                          string name,
                                          object value,
-                                         bool addIfEmpty,
-                                         bool caseInsensitive)
+                                         AddIfEmpty addIfEmpty,
+                                         CaseSensitive caseSensitive)
         {
-            var option = new JsonSerializerOptions { PropertyNameCaseInsensitive = !caseInsensitive };
+            var option = new JsonSerializerOptions { PropertyNameCaseInsensitive = caseSensitive == CaseSensitive.False };
             var source = JsonDocument.Parse(origin);
-            var result = source.RootElement.TryAddProperty(path, name, value, option,  addIfEmpty);
+            var result = source.RootElement.TryAddProperty(path, name, value, option, addIfEmpty == AddIfEmpty.True);
 
             Write(source, result);
 

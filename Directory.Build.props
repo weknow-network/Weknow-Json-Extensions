@@ -1,8 +1,11 @@
 <Project>
 	<PropertyGroup>
-		<Version>5.1.46</Version>
+		<Version>5.1.47</Version>
 		<PackageReleaseNotes>
-			- Move to .NET 7
+			- Move to .NET 7 (BREAKING CHANGES)
+			- 5.1.48: 
+			  + API changes (BREAKING CHANGES)
+			  + TryAddProperty
 		</PackageReleaseNotes>
 	</PropertyGroup>
 

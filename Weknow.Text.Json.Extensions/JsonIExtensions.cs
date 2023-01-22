@@ -72,12 +72,10 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
-        /// <param name="invert">if set to <c>true</c> [inverts the result].</param>
         /// <returns></returns>
         private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> CreatePathWriteFilter(
                         string path,
-                        bool caseSensitive = false, 
-                        bool invert = false)
+                        bool caseSensitive = false)
         {
             var filter = path.Split('.');
 
@@ -111,9 +109,10 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="path">The path.</param>
         /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
-        /// <param name="invert">if set to <c>true</c> [inverts the result].</param>
         /// <returns></returns>
-        private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> CreateExcludePathWriteFilter(string path, bool caseSensitive = false, bool invert = false)
+        private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> CreateExcludePathWriteFilter(
+                                                                                            string path,
+                                                                                            bool caseSensitive = false)
         {
             var filter = path.Split('.');
 
@@ -367,84 +366,73 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The path.</param>
+        /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
+        /// <param name="onReplace"><![CDATA[
+        /// Optional remove element notification.
+        /// Action's signature : (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// Returns: if return an element it will replace the existing value, otherwise it will remove the current value]]></param>
         /// <returns></returns>
         public static JsonElement Filter(
             this JsonDocument source,
-            string path)
+            string path,
+            bool caseSensitive = false,
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite, JsonElement?>? onReplace = null)
         {
-            return source.RootElement.Filter(path);
+            return source.RootElement.Filter(path, caseSensitive, onReplace);
         }
+
 
         /// <summary>
         /// Rewrite json while excluding elements according to a path
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The path.</param>
+        /// <param name="caseSensitive">indicate whether path should be a case sensitive</param>
+        /// <param name="onReplace"><![CDATA[
+        /// Optional remove element notification.
+        /// Action's signature : (current, deep, breadcrumbs spine) => ...;
+        /// current: the current JsonElement.
+        /// deep: start at 0.
+        /// breadcrumbs spine: spine of ancestor's properties and arrays index.
+        /// Returns: if return an element it will replace the existing value, otherwise it will remove the current value]]></param>
         /// <returns></returns>
         public static JsonElement Filter(
             this JsonElement source,
-            string path)
-        {
-            return source.Filter(false, path);
-        }
-
-        /// <summary>
-        /// Rewrite json while excluding elements according to a case-sensitive path
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="path">The path.</param>
-        /// <returns></returns>
-        public static JsonElement FilterSensitive(
-            this JsonElement source,
-            string path)
-        {
-            return source.Filter(true, path);
-        }
-
-        /// <summary>
-        /// Rewrite json while excluding elements according to a path
-        /// </summary>
-        /// <param name="source">The source.</param>
-        /// <param name="caseSensitive">indicate whether path should be a case sensitive</param>
-        /// <param name="path">The path.</param>
-        /// <returns></returns>
-        private static JsonElement Filter(
-            this JsonElement source,
-            bool caseSensitive,
-            string path)
+            string path,
+            bool caseSensitive = false,
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite, JsonElement?>? onReplace = null)
         {
             Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate =
                 CreatePathWriteFilter(path, caseSensitive);
-            return source.Filter(predicate);
+            return source.Filter(predicate, onReplace);
         }
 
         /// <summary>
         /// Filters descendant element by predicate.
         /// </summary>
         /// <param name="source">The source.</param>
-        /// <param name="predicate">
-        /// <![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
+        /// <param name="predicate"><![CDATA[The predicate: (current, deep, breadcrumbs spine) => ...;
         /// current: the current JsonElement.
         /// deep: start at 0.
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
-        /// TIP: using static System.Text.Json.TraverseFlowWrite;]]>
-        /// </param>
-        /// <param name="onRemove">         
-        /// <![CDATA[
+        /// TIP: using static System.Text.Json.TraverseFlowWrite;]]></param>
+        /// <param name="onReplace"><![CDATA[
         /// Optional remove element notification.
         /// Action's signature : (current, deep, breadcrumbs spine) => ...;
         /// current: the current JsonElement.
         /// deep: start at 0.
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
-        /// Returns: if return an element it will replace the existing value, otherwise it will remove the current value]]>
-        /// </param>
+        /// Returns: if return an element it will replace the existing value, otherwise it will remove the current value]]></param>
         /// <returns></returns>
         public static JsonElement Filter(
             this JsonDocument source,
             Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate,
-            Func<JsonElement, int, IImmutableList<string>, JsonElement?>? onRemove = null)
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite, JsonElement?>? onReplace = null)
         {
-            return source.RootElement.Filter(predicate);
+            return source.RootElement.Filter(predicate, onReplace);
         }
 
         /// <summary>
@@ -458,7 +446,7 @@ namespace System.Text.Json
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
         /// TIP: using static System.Text.Json.TraverseFlowWrite;]]>
         /// </param>
-        /// <param name="onRemove">         
+        /// <param name="onReplace">         
         /// <![CDATA[
         /// Optional remove element notification.
         /// Action's signature : (current, deep, breadcrumbs spine) => ...;
@@ -471,12 +459,12 @@ namespace System.Text.Json
         public static JsonElement Filter(
             this JsonElement source,
             Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate,
-            Func<JsonElement, int, IImmutableList<string>, JsonElement?>? onRemove = null)
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite, JsonElement?>? onReplace = null)
         {
             var bufferWriter = new ArrayBufferWriter<byte>();
             using (var writer = new Utf8JsonWriter(bufferWriter))
             {
-                source.FilterImp(writer, predicate, onRemove);
+                source.FilterImp(writer, predicate, onReplace);
             }
             var reader = new Utf8JsonReader(bufferWriter.WrittenSpan);
             var result = JsonDocument.ParseValue(ref reader);
@@ -559,8 +547,8 @@ namespace System.Text.Json
         /// deep: start at 0.
         /// breadcrumbs spine: spine of ancestor's properties and arrays index.
         /// TIP: using static System.Text.Json.TraverseFlowWrite;]]></param>
-        /// <param name="onRemove"><![CDATA[
-        /// Optional remove element notification.
+        /// <param name="onReplace"><![CDATA[
+        /// Optional replace / remove element notification.
         /// Action's signature : (current, deep, breadcrumbs spine) => ...;
         /// current: the current JsonElement.
         /// deep: start at 0.
@@ -573,7 +561,7 @@ namespace System.Text.Json
             this JsonElement element,
             Utf8JsonWriter writer,
             Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate,
-            Func<JsonElement, int, IImmutableList<string>, JsonElement?>? onRemove = null,
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite, JsonElement?>? onReplace = null,
             int deep = 0,
             IImmutableList<string>? breadcrumbs = null,
             bool propParent = false)
@@ -616,7 +604,7 @@ namespace System.Text.Json
                             TryStartObject();
                             writer.WritePropertyName(p.Name);
                             if (val.ValueKind == JsonValueKind.Object || val.ValueKind == JsonValueKind.Array)
-                                val.FilterImp(writer, predicate, onRemove, deep + 1, spn, true);
+                                val.FilterImp(writer, predicate, onReplace, deep + 1, spn, true);
                             else
                                 val.WriteTo(writer);
                             break;
@@ -627,7 +615,7 @@ namespace System.Text.Json
 
                     bool TryReplace()
                     {
-                        var replacement = onRemove?.Invoke(val, deep, spn);
+                        var replacement = onReplace?.Invoke(val, deep, spn, flow);
                         bool shouldReplace = replacement != null;
                         if (shouldReplace)
                         {
@@ -655,22 +643,28 @@ namespace System.Text.Json
                             break;
                         case TraverseFlowWrite.SkipToParent:
                         case TraverseFlowWrite.Skip:
-                            var replacement = onRemove?.Invoke(val, deep, spn);
-                            if (replacement != null)
-                            {
-                                replacement?.WriteTo(writer);
-                            }
+                            TryReplace();
                             break;
                         case TraverseFlowWrite.Drill:
                             if (val.ValueKind == JsonValueKind.Object || val.ValueKind == JsonValueKind.Array)
-                                val.FilterImp(writer, predicate, onRemove, deep + 1, spn);
+                                val.FilterImp(writer, predicate, onReplace, deep + 1, spn);
                             else
                                 val.WriteTo(writer);
                             break;
                     }
-
                     if (flow == TraverseFlowWrite.SkipToParent)
                         break;
+
+                    bool TryReplace()
+                    {
+                        var replacement = onReplace?.Invoke(val, deep, spn, flow);
+                        bool shouldReplace = replacement != null;
+                        if (shouldReplace)
+                        {
+                            replacement?.WriteTo(writer);
+                        }
+                        return shouldReplace;
+                    }
                 }
                 writer.WriteEndArray();
             }
@@ -1027,7 +1021,7 @@ namespace System.Text.Json
                       CreateExcludePathWriteFilter(path, caseSensitive);
             return source.Filter(predicate, OnMerge);
 
-            JsonElement? OnMerge(JsonElement target, int deep, IImmutableList<string> breadcrumbs)
+            JsonElement? OnMerge(JsonElement target, int deep, IImmutableList<string> breadcrumbs, TraverseFlowWrite flow)
             {
                 return target.Merge(joined);
             }
@@ -1118,7 +1112,7 @@ namespace System.Text.Json
                 };
             }
 
-            JsonElement? OnMerge(JsonElement target, int deep, IImmutableList<string> breadcrumbs)
+            JsonElement? OnMerge(JsonElement target, int deep, IImmutableList<string> breadcrumbs, TraverseFlowWrite flow)
             {
                 return target.Merge(joined);
             }
@@ -2494,8 +2488,10 @@ namespace System.Text.Json
                         CreatePathWriteFilter(path, caseSensitive);
             return source.Filter(predicate, OnTryAdd);
             
-            JsonElement? OnTryAdd(JsonElement target, int deep, IImmutableList<string> breadcrumbs)
+            JsonElement? OnTryAdd(JsonElement target, int deep, IImmutableList<string> breadcrumbs, TraverseFlowWrite flow)
             {
+                if (flow == TraverseFlowWrite.Skip)
+                    return target;
                 var result = target.TryAddProperty(name, value, options, addIfEmpty);
                 return result;
             }

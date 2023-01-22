@@ -90,9 +90,7 @@ namespace Weknow.Text.Json.Extensions.Tests
 		{
 			_outputHelper.WriteLine(path);
 			var source = JsonDocument.Parse(JSON_INDENT);
-			var target = caseSensitive 
-				? source.RootElement.FilterSensitive(path)
-				: source.RootElement.Filter(path);
+			var target = source.RootElement.Filter(path, caseSensitive);
 
 			Write(source, target);
 			Assert.Equal(
