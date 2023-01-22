@@ -74,7 +74,10 @@ namespace System.Text.Json
         /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
         /// <param name="invert">if set to <c>true</c> [inverts the result].</param>
         /// <returns></returns>
-        private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> CreatePathWriteFilter(string path, bool caseSensitive = false, bool invert = false)
+        private static Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> CreatePathWriteFilter(
+                        string path,
+                        bool caseSensitive = false, 
+                        bool invert = false)
         {
             var filter = path.Split('.');
 
@@ -598,18 +601,16 @@ namespace System.Text.Json
                     switch (flow)
                     {
                         case TraverseFlowWrite.Pick:
-                            TryStartObject();
-                            writer.WritePropertyName(p.Name);
-                            val.WriteTo(writer);
+                            if (!TryReplace())
+                            {
+                                TryStartObject();
+                                writer.WritePropertyName(p.Name);
+                                val.WriteTo(writer);
+                            }
                             break;
                         case TraverseFlowWrite.SkipToParent:
                         case TraverseFlowWrite.Skip:
-                            var replacement = onRemove?.Invoke(val, deep, spn);
-                            if (replacement != null)
-                            {
-                                writer.WritePropertyName(p.Name);
-                                replacement?.WriteTo(writer);
-                            }
+                            TryReplace();
                             break;
                         case TraverseFlowWrite.Drill:
                             TryStartObject();
@@ -623,6 +624,19 @@ namespace System.Text.Json
 
                     if (flow == TraverseFlowWrite.SkipToParent)
                         break;
+
+                    bool TryReplace()
+                    {
+                        var replacement = onRemove?.Invoke(val, deep, spn);
+                        bool shouldReplace = replacement != null;
+                        if (shouldReplace)
+                        {
+                            TryStartObject();
+                            writer.WritePropertyName(p.Name);
+                            replacement?.WriteTo(writer);
+                        }
+                        return shouldReplace;
+                    }
                 }
                 TryEndObject();
             }
@@ -854,11 +868,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonDocument source,
@@ -870,11 +887,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonElement source,
@@ -886,11 +906,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonDocument source,
@@ -902,11 +925,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonElement source,
@@ -918,12 +944,15 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonDocument source,
@@ -936,12 +965,15 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonElement source,
@@ -954,12 +986,15 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonDocument source,
@@ -972,12 +1007,15 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="path">The target path for merging.</param>
         /// <param name="caseSensitive">if set to <c>true</c> [case sensitive].</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonElement source,
@@ -998,11 +1036,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="predicate">Identify the merge with element.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonDocument source,
@@ -1014,11 +1055,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="predicate">Identify the merge with element.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonElement source,
@@ -1030,11 +1074,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="predicate">Identify the merge with element.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonDocument source,
@@ -1046,11 +1093,14 @@ namespace System.Text.Json
 
         /// <summary>
         /// Merge source json with other json at specific location within the source
-        /// Note: which will override the source on conflicts, Array will be concatenate.
+        /// Note: 
+        /// - On conflicts, will override the source
+        /// - Array will be concatenate.
         /// </summary>
         /// <param name="source">The source.</param>
         /// <param name="predicate">Identify the merge with element.</param>
         /// <param name="joined">The joined element (will override on conflicts).</param>
+        /// <remarks>Conflicts may happens when trying to merge object into array or other versa.</remarks>
         /// <returns></returns>
         public static JsonElement MergeInto(
             this JsonElement source,
@@ -2413,5 +2463,108 @@ namespace System.Text.Json
         }
 
         #endregion // AddIntoObject
+
+        #region TryAddProperty
+
+        /// <summary>
+        /// Try add property into a specific path in the json
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source json.</param>
+        /// <param name="path">The path where the property should go into.</param>
+        /// <param name="name">The name of the property.</param>
+        /// <param name="value">The value of the property.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="addIfEmpty">if set to <c>true</c> [add the value into an empty property].</param>
+        /// <returns></returns>
+        public static JsonElement TryAddProperty<T>(
+                                    this JsonElement source,
+                                    string path,
+                                    string name,
+                                    T value,
+                                    JsonSerializerOptions? options = null,
+                                    bool addIfEmpty = true)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return source.TryAddProperty(name, value, options, addIfEmpty);
+            }
+            bool caseSensitive = !(options?.PropertyNameCaseInsensitive ?? true);
+            Func<JsonElement, int, IImmutableList<string>, TraverseFlowWrite> predicate =
+                        CreatePathWriteFilter(path, caseSensitive);
+            return source.Filter(predicate, OnTryAdd);
+            
+            JsonElement? OnTryAdd(JsonElement target, int deep, IImmutableList<string> breadcrumbs)
+            {
+                var result = target.TryAddProperty(name, value, options, addIfEmpty);
+                return result;
+            }
+
+        }
+
+        /// <summary>
+        /// Try add property into a json object
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="source">The source json.</param>
+        /// <param name="name">The name of the property.</param>
+        /// <param name="value">The value of the property.</param>
+        /// <param name="options">The options.</param>
+        /// <param name="addIfEmpty">if set to <c>true</c> [add the value into an empty property].</param>
+        /// <returns></returns>
+        public static JsonElement TryAddProperty<T>(
+                                    this JsonElement source,
+                                    string name,
+                                    T value,
+                                    JsonSerializerOptions? options = null,
+                                    bool addIfEmpty = true)
+        {
+            if (source.ValueKind != JsonValueKind.Object)
+                throw new NotSupportedException("Only object are eligible as target for TryAddProperty");
+
+            bool ignoreCase = options?.PropertyNameCaseInsensitive ?? true;
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = new Utf8JsonWriter(buffer))
+            {
+                writer.WriteStartObject();
+                bool exists = false;
+                foreach (JsonProperty item in source.EnumerateObject())
+                {
+                    bool shouldOverride = false;
+                    if (string.Compare(item.Name, name, ignoreCase) == 0)
+                    {
+                        exists = true;
+                        shouldOverride = item.Value.ValueKind switch
+                        {
+                            JsonValueKind.Null => addIfEmpty,
+                            JsonValueKind.Undefined => addIfEmpty,
+                            _ => false
+                        };
+                    }
+                    if (shouldOverride)
+                        WriteProp();
+                    else
+                        item.WriteTo(writer);
+                }
+
+                if (!exists)
+                    WriteProp();
+
+                writer.WriteEndObject();
+
+                void WriteProp()
+                {
+                    writer.WritePropertyName(name);
+                    var val = value.ToJson(options);
+                    val.WriteTo(writer);
+                }
+            }
+
+            var reader = new Utf8JsonReader(buffer.WrittenSpan);
+            JsonDocument result = JsonDocument.ParseValue(ref reader);
+            return result.RootElement;
+        }
+
+        #endregion // TryAddProperty
     }
 }

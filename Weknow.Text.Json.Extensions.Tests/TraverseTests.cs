@@ -34,21 +34,22 @@ namespace Weknow.Text.Json.Extensions.Tests
 
 
         private const string JSON_INDENT =
-@"{
-  ""A"": 12,
-  ""B"": {
-    ""B1"": ""Cool"",
-    ""B2"": {
-        ""B21"": {
-          ""B211"": 211
-        },
-        ""B22"": 22    
-    }
-  },
-  ""C"": [""C1"", ""C2""],
-  ""D"": [{ ""D1"": 1}, ""D2"", 3]
-}
-";
+                """
+                {
+                  "A": 12,
+                  "B": {
+                    "B1": "Cool",
+                    "B2": {
+                        "B21": {
+                          "B211": 211
+                        },
+                        "B22": 22    
+                    }
+                  },
+                  "C": ["C1", "C2"],
+                  "D": [{ "D1": 1}, "D2", 3]
+                }
+                """;
 
         private void Write(JsonDocument source, JsonElement positive)
         {
@@ -110,5 +111,7 @@ namespace Weknow.Text.Json.Extensions.Tests
             Assert.True(d[0].TryGetProperty("D1", out var d1));
             Assert.Equal(1, d1.GetInt32());
         }
+
+        
     }
 }

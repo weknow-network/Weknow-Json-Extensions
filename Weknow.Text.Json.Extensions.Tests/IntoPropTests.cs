@@ -34,10 +34,11 @@ namespace Weknow.Text.Json.Extensions.Tests
 
 
         private const string JSON_INDENT =
-@"{
-  ""A"": [1, 2, 3]
-}
-";
+            """
+            {
+              "A": [1, 2, 3]
+            }
+            """;
 
         private const string JSON_ARR_INDENT = @"[1, 2, 3]";
 
@@ -50,36 +51,34 @@ namespace Weknow.Text.Json.Extensions.Tests
         }
 
 
-        [Fact]
-        public void IntoProp_Object_Test()
+        [Theory]
+        [InlineData(
+            JSON_INDENT,
+            """
+            {
+                "root": {
+                    "A": [1, 2, 3]
+                }
+            }
+            """, 
+            "root")]
+        [InlineData(
+            JSON_ARR_INDENT,
+            """
+            {
+                "root": [1, 2, 3]
+            }
+            """, 
+            "root")]
+        public void IntoProp_Object_Test(string origin, string expected, string prop)
         {
-            var source = JsonDocument.Parse(JSON_INDENT).RootElement;
-            var result = source.IntoProp("root");
+            var source = JsonDocument.Parse(origin).RootElement;
+            var result = source.IntoProp(prop);
 
             Write(source, result);
 
-            Assert.Equal(JsonValueKind.Object, result.ValueKind);
-            Assert.False(result.TryGetProperty("A", out _));
-            Assert.True(result.TryGetProperty("root", out var root));
-            Assert.True(root.TryGetProperty("A", out var a));
-            Assert.Equal(1, a[0].GetInt16());
-            Assert.Equal(2, a[1].GetInt16());
-            Assert.Equal(3, a[2].GetInt16());
-        }
-
-        [Fact]
-        public void IntoProp_array_Test()
-        {
-            var source = JsonDocument.Parse(JSON_ARR_INDENT).RootElement;
-            var result = source.IntoProp("root");
-
-            Write(source, result);
-
-            Assert.Equal(JsonValueKind.Object, result.ValueKind);
-            Assert.True(result.TryGetProperty("root", out var root));
-            Assert.Equal(1, root[0].GetInt16());
-            Assert.Equal(2, root[1].GetInt16());
-            Assert.Equal(3, root[2].GetInt16());
+            var expectedResult = JsonDocument.Parse(expected.Replace('\'', '"')).RootElement;
+            Assert.Equal(expectedResult.AsString(), result.AsString());
         }
     }
 }
