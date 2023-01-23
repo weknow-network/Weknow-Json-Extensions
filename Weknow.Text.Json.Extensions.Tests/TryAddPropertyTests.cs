@@ -13,6 +13,7 @@ using Xunit.Abstractions;
 using Xunit.Sdk;
 
 using static Weknow.Text.Json.Constants;
+using static Weknow.Text.Json.Extensions.Tests.TryAddPropertyTests;
 
 namespace Weknow.Text.Json.Extensions.Tests
 {
@@ -32,15 +33,19 @@ namespace Weknow.Text.Json.Extensions.Tests
 
         #endregion Ctor
 
-        private void Write(JsonDocument source, JsonElement positive)
+        private void Write(JsonDocument source, JsonElement positive, string? desc = null)
         {
+            if(desc != null) 
+            {
+                _outputHelper.WriteLine($"======= {desc} =========");
+            }
             _outputHelper.WriteLine("Source:-----------------");
             _outputHelper.WriteLine(source.RootElement.AsString());
             _outputHelper.WriteLine("Result:-----------------");
             _outputHelper.WriteLine(positive.AsString());
         }
 
-        public enum AddIfEmpty
+        public enum IgnoreWhenNull
         {
             True,
             False
@@ -56,49 +61,54 @@ namespace Weknow.Text.Json.Extensions.Tests
             """ { "A1": 0, "B": 0, "C": 1 } """,
             "",
             "C", 1,
-            AddIfEmpty.True, CaseSensitive.True)]
+            IgnoreWhenNull.True, CaseSensitive.True)]
         [InlineData(""" { "Start": { "A2": 0, "B": 0 } } """,
             """ { "Start": { "A2": 0, "B": 0, "C": 1 } } """,
             "Start",
             "C", 1,
-            AddIfEmpty.True, CaseSensitive.True)]
+            IgnoreWhenNull.True, CaseSensitive.True)]
         [InlineData(""" { "Start": { "A2": 0, "B": 0, "C": null  } } """,
             """ { "Start": { "A2": 0, "B": 0, "C": 1 } } """,
             "Start",
             "c", 1,
-            AddIfEmpty.True, CaseSensitive.False,
+            IgnoreWhenNull.True, CaseSensitive.False,
             "Ignore case: 'c' will modify property 'C'")]
         [InlineData(""" { "Start": { "A3": 0, "B": 0 } } """,
             """ { "Start": { "A3": 0, "B": 0} } """,
             "start",
             "C", 1,
-            AddIfEmpty.True, CaseSensitive.True,
+            IgnoreWhenNull.True, CaseSensitive.True,
             "Not found: case sensitive filter")]
         [InlineData(""" { "Start": { "A4": 0, "B": 0 } } """,
             """ { "Start": { "A4": 0, "B": 0 } } """,
             "start",
             "C", 1,
-            AddIfEmpty.False, CaseSensitive.True)]
+            IgnoreWhenNull.False, CaseSensitive.True)]
         [InlineData(""" { "Start": { "A5": 0, "B": 0 } } """,
             """ { "Start": { "A5": 0, "B": 0, "b": 1 } } """,
             "Start",
             "b", 1,
-            AddIfEmpty.False, CaseSensitive.True,
+            IgnoreWhenNull.False, CaseSensitive.True,
             "Case sensitive: create new property of lower case 'b'")]
         public void TryAdd_WithPath_Test(string origin,
                                          string expected,
                                          string path,
                                          string name,
                                          object value,
-                                         AddIfEmpty addIfEmpty,
+                                         IgnoreWhenNull ignoreNull,
                                          CaseSensitive caseSensitive,
                                          string? desc = null)
         {
-            var option = new JsonSerializerOptions { PropertyNameCaseInsensitive = caseSensitive == CaseSensitive.False };
+            var serializationOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = caseSensitive == CaseSensitive.False };
+            var options = new JsonPropertyModificatonOpions
+            {
+                Options = serializationOptions,
+                IgnoreNull = ignoreNull == IgnoreWhenNull.True
+            };
             var source = JsonDocument.Parse(origin);
-            var result = source.RootElement.TryAddProperty(path, name, value, option, addIfEmpty == AddIfEmpty.True);
+            var result = source.RootElement.TryAddProperty(path, name, value, options);
 
-            Write(source, result);
+            Write(source, result, desc);
 
             var expectedResult = JsonDocument.Parse(expected.Replace('\'', '"')).RootElement;
             Assert.Equal(expectedResult.AsString(), result.AsString());
@@ -108,34 +118,39 @@ namespace Weknow.Text.Json.Extensions.Tests
         [InlineData( """ { "A": 0, "B": 0 } """,
             """ { "A": 0, "B": 0, "C": 1 } """,
             "C", 1,
-            true, false)]
+            IgnoreWhenNull.True, CaseSensitive.True)]
         [InlineData( """ { "A": 0, "B": 0 } """,
             """ { "A": 0, "B": 0, "C": 1 } """,
-            "C", 1, true, null)]
+            "C", 1,
+            IgnoreWhenNull.True, CaseSensitive.False)]
         [InlineData( """ { "A": 0, "B": 0, "C": null } """,
             """ { "A": 0, "B": 0, "C": 1 } """,
             "C", 1,
-            true, false)]
+            IgnoreWhenNull.True, CaseSensitive.True)]
         [InlineData( """ { "A": 0, "B": 0, "C": null } """,
             """ { "A": 0, "B": 0, "C": null, "c": 1 } """,
             "c", 1,
-            true, false)]
+            IgnoreWhenNull.True, CaseSensitive.True)]
         [InlineData( """ { "A": 0, "B": 0, "C": null } """,
             """ { "A": 0, "B": 0, "C": null } """,
             "c", 1,
-            false, true)]
+            IgnoreWhenNull.False, CaseSensitive.False)]
         public void TryAdd_Test(string origin,
                                 string expected,
                                 string name,
                                 object value,
-                                bool addIfEmpty,
-                                bool? caseInsensitive)
+                                IgnoreWhenNull ignoreNull,
+                                CaseSensitive caseSensitive,
+                                string? desc = null)
         {
-            var option = caseInsensitive != null 
-                            ? new JsonSerializerOptions { PropertyNameCaseInsensitive = caseInsensitive ?? true } 
-                            : null as JsonSerializerOptions;
+            var serializationOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = caseSensitive == CaseSensitive.False };
+            var options = new JsonPropertyModificatonOpions
+            {
+                Options = serializationOptions,
+                IgnoreNull = ignoreNull == IgnoreWhenNull.True
+            };
             var source = JsonDocument.Parse(origin);
-            var result = source.RootElement.TryAddProperty(name, value, option, addIfEmpty);
+            var result = source.RootElement.TryAddProperty(name, value, options);
 
             Write(source, result);
 
