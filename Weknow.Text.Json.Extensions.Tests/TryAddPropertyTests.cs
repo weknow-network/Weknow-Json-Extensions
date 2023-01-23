@@ -62,11 +62,18 @@ namespace Weknow.Text.Json.Extensions.Tests
             "Start",
             "C", 1,
             AddIfEmpty.True, CaseSensitive.True)]
+        [InlineData(""" { "Start": { "A2": 0, "B": 0, "C": null  } } """,
+            """ { "Start": { "A2": 0, "B": 0, "C": 1 } } """,
+            "Start",
+            "c", 1,
+            AddIfEmpty.True, CaseSensitive.False,
+            "Ignore case: 'c' will modify property 'C'")]
         [InlineData(""" { "Start": { "A3": 0, "B": 0 } } """,
             """ { "Start": { "A3": 0, "B": 0} } """,
             "start",
             "C", 1,
-            AddIfEmpty.True, CaseSensitive.True)]
+            AddIfEmpty.True, CaseSensitive.True,
+            "Not found: case sensitive filter")]
         [InlineData(""" { "Start": { "A4": 0, "B": 0 } } """,
             """ { "Start": { "A4": 0, "B": 0 } } """,
             "start",
@@ -76,14 +83,16 @@ namespace Weknow.Text.Json.Extensions.Tests
             """ { "Start": { "A5": 0, "B": 0, "b": 1 } } """,
             "Start",
             "b", 1,
-            AddIfEmpty.False, CaseSensitive.True)]
+            AddIfEmpty.False, CaseSensitive.True,
+            "Case sensitive: create new property of lower case 'b'")]
         public void TryAdd_WithPath_Test(string origin,
                                          string expected,
                                          string path,
                                          string name,
                                          object value,
                                          AddIfEmpty addIfEmpty,
-                                         CaseSensitive caseSensitive)
+                                         CaseSensitive caseSensitive,
+                                         string? desc = null)
         {
             var option = new JsonSerializerOptions { PropertyNameCaseInsensitive = caseSensitive == CaseSensitive.False };
             var source = JsonDocument.Parse(origin);

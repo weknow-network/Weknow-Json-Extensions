@@ -2538,19 +2538,19 @@ namespace System.Text.Json
                         };
                     }
                     if (shouldOverride)
-                        WriteProp();
+                        WriteProp(item.Name);
                     else
                         item.WriteTo(writer);
                 }
 
                 if (!exists)
-                    WriteProp();
+                    WriteProp(name);
 
                 writer.WriteEndObject();
 
-                void WriteProp()
+                void WriteProp(string propName)
                 {
-                    writer.WritePropertyName(name);
+                    writer.WritePropertyName(propName);
                     var val = value.ToJson(options);
                     val.WriteTo(writer);
                 }
