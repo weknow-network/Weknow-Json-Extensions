@@ -9,8 +9,9 @@ Functionality of this library includes:
 - [Filter](#Filter)
   - [Path based Filter][#Path-based-Filter]
 - [Exclude](#Exclude)
+- [TryAddProperty](#TryAddProperty)
 - [Merge](#Merge)
-  - [Merge Into][#Merge-Into]
+  - [Merge Into](#Merge-Into)
 - [Serialization](#Serialization)
   - [Convert Object into Json Element](#ToJson)
   - [Convert Json Element to string](#AsString)
@@ -165,6 +166,118 @@ var target = source.Exclude("B");
 // results: {"A":10,"C":[0,25,50,100],"Note":"Re-shape json"}
 ```
 
+## TryAddProperty
+
+Try to add property if missing.
+
+### Sample 1
+
+```json
+{ "A": 0, "B": 0 }
+```
+
+```cs
+var source = JsonDocument.Parse(json);
+source.RootElement.TryAddProperty("C", 1);
+```
+
+Result in:
+```json
+{ "A": 0, "B": 0, "C": 1 }
+```
+
+---
+
+### Sample 2
+
+```json
+{ "A": 0, "B": 0, "C": 0 }
+```
+
+```cs
+var source = JsonDocument.Parse(json);
+source.RootElement.TryAddProperty("C", 1);
+```
+
+Result in:
+```json
+{ "A": 0, "B": 0, "C": 0 }
+```
+
+---
+
+### Sample 3
+
+
+```json
+{ "A": 0, "B": 0, "C": null }
+```
+
+```cs
+var source = JsonDocument.Parse(json);
+source.RootElement.TryAddProperty("C", 1);
+```
+
+Result in:
+```json
+{ "A": 0, "B": 0, "C": 1 }
+```
+
+Unless sets the options not to ignore null
+
+```cs
+var options = new JsonPropertyModificatonOpions
+{
+    IgnoreNull = false
+};
+var source = JsonDocument.Parse(json);
+source.RootElement.TryAddProperty("C", 1);
+```
+
+Which will result in:
+```json
+{ "A": 0, "B": 0, "C": null }
+```
+
+---
+
+### Sample 4
+
+Changing property within a path
+
+```json
+{
+	"X": {
+		"Y": {
+			"A": 0,
+			"B": 0
+		}
+	},
+	"Q": 2
+}  "Q": 2
+}
+```
+
+```cs
+var source = JsonDocument.Parse(json);
+source.RootElement.TryAddProperty("X.Y", "C", 1);
+```
+
+Result in:
+```json
+{
+	"X": {
+		"Y": {
+			"A": 0,
+			"B": 0,
+            "C": 1
+		}
+	},
+	"Q": 2
+}
+```
+
+
 ## Merge
 
 Merging 2 or more json.
@@ -265,8 +378,7 @@ Convert JsonElement to stream
 
 ``` cs
 JsonElement json = ...;
-Stream srm = json.ToStream();
-```
+Stream srm
 
 ### ImmutableDictionary converter.
 
